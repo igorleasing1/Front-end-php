@@ -66,9 +66,8 @@ const handleCheckout = () => {
         <label :class="['method-tile', { active: paymentMethod === 'pix' }]">
           <div class="tile-main">
             <input type="radio" v-model="paymentMethod" value="pix">
-            <div class="content pix-content">
+            <div class="content">
               <span class="title">Pix</span>
-              <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_Pix_Brasil.png" alt="Pix" class="pix-logo">
               <span class="badge">Aprovação na hora</span>
             </div>
           </div>
@@ -172,17 +171,6 @@ const handleCheckout = () => {
   align-items: center;
 }
 
-.pix-content {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-}
-
-.pix-logo {
-  height: 14px;
-  filter: brightness(1.2);
-}
-
 .method-tile input { accent-color: #1db954; width: 1.1rem; height: 1.1rem; }
 
 .badge {
@@ -192,6 +180,7 @@ const handleCheckout = () => {
   font-weight: 700;
   padding: 0.2rem 0.5rem;
   border-radius: 4px;
+  margin-left: 0.5rem;
 }
 
 /* Estilos da lista de cartões */
@@ -214,7 +203,7 @@ const handleCheckout = () => {
 }
 
 .brand-badge {
-  background: #ffffff; /* Fundo branco para destacar os logos coloridos */
+  background: #ffffff;
   padding: 0.4rem;
   border-radius: 4px;
   display: flex;
