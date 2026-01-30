@@ -1,87 +1,119 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const isLoading = ref(false)
 
 const plans = [
   {
     id: 'free',
-    name: 'Essencial',
+    name: 'Start',
     price: '0,00',
-    description: 'Perfeito para descobrir novas sonoridades sem custo.',
-    features: ['Biblioteca de 50M de faixas', 'Qualidade de áudio padrão', 'Suporte com anúncios'],
-    buttonText: 'Começar Grátis',
+    description: 'Para quem ama música e não quer gastar nada agora.',
+    features: ['Acesso a 50 milhões de faixas', 'Modo aleatório inteligente', 'Qualidade padrão eficiente'],
+    buttonText: 'Criar conta grátis',
     color: '#64748b',
     featured: false
   },
   {
     id: 'basic',
-    name: 'Pro',
+    name: 'Premium',
     price: '14,90',
-    description: 'A liberdade de ouvir o que quiser, onde estiver.',
-    features: ['Sem interrupções', 'Pulos ilimitados', 'Áudio de alta fidelidade', 'Ouvir offline'],
-    buttonText: 'Assinar Pro',
+    description: 'A escolha inteligente para ouvir sem interrupções.',
+    features: ['Zero anúncios', 'Baixe para ouvir offline', 'Pule faixas à vontade', 'Áudio de alta definição'],
+    buttonText: 'Testar Premium',
     color: '#3b82f6',
     featured: false
   },
   {
     id: 'premium',
-    name: 'Elite',
+    name: 'Audiophile',
     price: '29,90',
-    description: 'O ápice da experiência sonora para audiófilos.',
-    features: ['Áudio Ultra Hi-Fi (Lossless)', 'Até 6 perfis familiares', 'Acesso antecipado a álbuns', 'Dispositivos ilimitados'],
-    buttonText: 'Seja Elite',
+    description: 'Para quem exige a perfeição em cada nota.',
+    features: ['Qualidade Master Studio (Lossless)', 'Dolby Atmos Espacial', 'Acesso a lançamentos exclusivos', 'Plano Família (até 6 contas)'],
+    buttonText: 'Quero a melhor experiência',
     color: '#8b5cf6',
     featured: true
   }
 ]
+
+const handleNavigation = (e) => {
+  e.preventDefault()
+  isLoading.value = true
+  setTimeout(() => {
+    router.push('/pagamento')
+  }, 1500)
+}
 </script>
 
 <template>
   <div class="site-wrapper">
+    <Transition name="fade">
+      <div v-if="isLoading" class="loading-overlay">
+        <div class="loading-content">
+          <div class="spinner"></div>
+          <p class="loading-text">Aguarde um momento...</p>
+        </div>
+      </div>
+    </Transition>
+
     <nav class="navbar">
       <div class="nav-content">
         <div class="brand">
-          <h1 class="logo">Music<span>fy</span></h1>
+          <h1 class="logo"><span>TESTE</span></h1>
         </div>
         
         <div class="nav-right">
           <div class="nav-links">
-            <a href="#explorar">Explorar</a>
-            <a href="#sobre">Sobre</a>
+            <a href="#explorar">Planos</a>
+            <a href="#sobre">Recursos</a>
           </div>
-          <button class="btn-login">Entrar</button>
+          <button class="btn-login">Acessar Conta</button>
         </div>
       </div>
     </nav>
 
     <header class="hero-section">
       <div class="hero-content">
-        <div class="badge-container">
-          <span class="badge">Lançamento 2026</span>
-        </div>
-        <h2>Sua música, <br>do seu jeito.</h2>
-        <p>Milhões de faixas com a maior fidelidade sonora do mercado.</p>
+        <h2>Ouça agora nossas músicas, <br></h2>
+        <p>Não apenas ouça. Sinta. Redescubra seus artistas favoritos com a tecnologia de áudio mais imersiva do mundo.</p>
+        
+        <p class="promo-text">
+          <strong>teste</strong> 
+        </p>
+
         <div class="hero-btns">
-          <button class="btn-primary">Explorar Planos</button>
+          <a href="#explorar" class="btn-primary">Ver Planos e Preços</a>
         </div>
       </div>
     </header>
 
     <section id="explorar" class="pricing-section">
+      <div class="section-header">
+        <h3>Escolha o ritmo da sua assinatura</h3>
+        <p>Cancele quando quiser. Sem taxas escondidas, apenas música boa.</p>
+      </div>
+
       <div class="plans-wrapper">
         <div 
           v-for="plan in plans" 
           :key="plan.id" 
           :class="['plan-card', { 'is-featured': plan.featured }]"
         >
-          <div v-if="plan.featured" class="popular-tag">RECOMENDADO</div>
+          <div v-if="plan.featured" class="popular-tag">MAIS VENDIDO</div>
+          
           <div class="card-body">
             <h4 :style="{ color: plan.color }">{{ plan.name }}</h4>
+            
             <div class="price">
               <span class="currency">R$</span>
               <span class="val">{{ plan.price }}</span>
               <span class="period">/mês</span>
             </div>
+
             <p class="desc">{{ plan.description }}</p>
+
             <ul class="feat-list">
               <li v-for="f in plan.features" :key="f">
                 <span class="dot" :style="{ background: plan.color }"></span>
@@ -89,24 +121,24 @@ const plans = [
               </li>
             </ul>
           </div>
-          <button>
-          <router-link :to="`/pagamento`"
-          class="btn-plan" :style="{ backgroundColor: plan.color }">
-            {{ plan.buttonText }}
-          </router-link>
-          </button>
+
+          <div class="btn-container-reset">
+            <a href="/pagamento" @click="handleNavigation"
+               class="btn-plan" :style="{ backgroundColor: plan.color }">
+              {{ plan.buttonText }}
+            </a>
+          </div>
         </div>
       </div>
     </section>
 
     <footer class="site-footer">
-      <p>&copy; 2026 Musicfy. Sem fronteiras para o som.</p>
+      <p>&copy; 2026 Soundfy. Feito para quem vive de música.</p>
     </footer>
   </div>
 </template>
 
 <style>
-/* Reset e Base Global */
 html, body {
   margin: 0;
   padding: 0;
@@ -118,17 +150,57 @@ html, body {
   scroll-behavior: smooth;
 }
 
-#app { width: 100%; }
+#app {
+  width: 100%;
+}
 </style>
 
 <style scoped>
-.site-wrapper {
-  min-height: 100vh;
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: #020617;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
 }
 
-/* Navbar Estilizada */
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(59, 130, 246, 0.1);
+  border-left-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  color: #94a3b8;
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.4s;
+}
+
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
 .navbar {
   position: fixed;
   top: 0;
@@ -153,13 +225,16 @@ html, body {
   align-items: center;
 }
 
-.logo { 
-  font-size: 1.5rem; 
-  font-weight: 800; 
-  margin: 0; 
+.logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
   letter-spacing: -1px;
 }
-.logo span { color: #3b82f6; }
+
+.logo span {
+  color: #3b82f6;
+}
 
 .nav-right {
   display: flex;
@@ -180,7 +255,9 @@ html, body {
   transition: color 0.2s;
 }
 
-.nav-links a:hover { color: #fff; }
+.nav-links a:hover {
+  color: #fff;
+}
 
 .btn-login {
   background: #fff;
@@ -191,33 +268,14 @@ html, body {
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: transform 0.2s, opacity 0.2s;
+  transition: 0.2s;
 }
 
-.btn-login:hover {
-  transform: translateY(-1px);
-  opacity: 0.9;
-}
-
-/* Hero Section Refinada */
 .hero-section {
   padding-top: 160px;
   padding-bottom: 100px;
   background: radial-gradient(circle at top, #1e1b4b 0%, #020617 70%);
   text-align: center;
-}
-
-.badge-container { margin-bottom: 1.5rem; }
-.badge {
-  background: rgba(59, 130, 246, 0.1);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  padding: 0.5rem 1rem;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
 }
 
 .hero-section h2 {
@@ -231,40 +289,55 @@ html, body {
 .hero-section p {
   font-size: 1.15rem;
   color: #94a3b8;
-  max-width: 550px;
-  margin: 0 auto 2.5rem;
+  max-width: 600px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.6;
+}
+
+.promo-text {
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+  display: inline-block;
+  padding: 0.8rem 1.5rem;
+  border-radius: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 2.5rem;
 }
 
 .btn-primary {
+  display: inline-block;
+  text-decoration: none;
   background: #3b82f6;
   color: #fff;
-  border: none;
   padding: 1rem 2.5rem;
   border-radius: 12px;
   font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  box-shadow: 0 10px 20px -5px rgba(59, 130, 246, 0.4);
-  transition: all 0.3s;
+  transition: 0.3s;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 15px 30px -5px rgba(59, 130, 246, 0.5);
-}
-
-/* Seção de Planos (Grid Lado a Lado) */
 .pricing-section {
-  padding: 100px 2rem;
+  padding: 80px 2rem 100px;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 3.5rem;
+}
+
+.section-header h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #fff;
 }
 
 .plans-wrapper {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
-  align-items: stretch;
 }
 
 .plan-card {
@@ -275,49 +348,133 @@ html, body {
   display: flex;
   flex-direction: column;
   position: relative;
+  transition: 0.3s;
+}
+
+.plan-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .is-featured {
-  background: #131233;
+  background: linear-gradient(180deg, #131233 0%, #0f172a 100%);
   border: 2px solid #8b5cf6;
   transform: scale(1.05);
   z-index: 10;
 }
 
 .popular-tag {
-  position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
-  background: #8b5cf6; color: #fff; padding: 0.3rem 1rem; border-radius: 100px; font-size: 0.7rem; font-weight: 800;
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #8b5cf6;
+  color: #fff;
+  padding: 0.4rem 1.2rem;
+  border-radius: 100px;
+  font-size: 0.75rem;
+  font-weight: 800;
 }
 
-.card-body { flex-grow: 1; }
-.card-body h4 { text-transform: uppercase; font-size: 0.75rem; letter-spacing: 2px; margin-bottom: 1rem; }
-.price { display: flex; align-items: baseline; gap: 0.3rem; margin-bottom: 1rem; }
-.val { font-size: 3rem; font-weight: 800; }
-.desc { color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin-bottom: 2rem; }
+.card-body {
+  flex-grow: 1;
+}
 
-.feat-list { list-style: none; padding: 0; margin-bottom: 2rem; }
-.feat-list li { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; font-size: 0.85rem; color: #cbd5e1; }
-.dot { width: 6px; height: 6px; border-radius: 50%; }
+.card-body h4 {
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  margin-bottom: 1rem;
+  font-weight: 800;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.val {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #fff;
+}
+
+.desc {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+  min-height: 45px;
+}
+
+.feat-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 2rem;
+}
+
+.feat-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  color: #cbd5e1;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.btn-container-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  width: 100%;
+}
 
 .btn-plan {
-  border: none; padding: 1rem; border-radius: 12px; color: #fff; font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+  display: block;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.btn-plan:hover {
+  opacity: 0.9;
 }
 
 .site-footer {
   text-align: center;
   padding: 4rem 2rem;
   color: #475569;
-  font-size: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: auto;
 }
 
-/* Responsividade */
 @media (max-width: 1024px) {
-  .plans-wrapper { grid-template-columns: 1fr 1fr; }
-  .is-featured { transform: scale(1); }
+  .plans-wrapper {
+    grid-template-columns: 1fr 1fr;
+  }
+  .is-featured {
+    transform: scale(1);
+  }
 }
 
 @media (max-width: 768px) {
-  .nav-links { display: none; }
-  .plans-wrapper { grid-template-columns: 1fr; }
+  .nav-links {
+    display: none;
+  }
+  .plans-wrapper {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

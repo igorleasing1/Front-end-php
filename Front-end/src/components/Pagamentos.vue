@@ -2,19 +2,19 @@
 import { ref } from 'vue'
 
 const paymentMethod = ref('credit-card')
+
 const plan = ref({
-  name: 'Plano Melomaníaco',
-  price: 24.90,
-  description: 'Qualidade Hi-Fi + Sem anúncios'
+  name: 'Plano Audiophile',
+  price: 29.90,
+  description: 'Qualidade Master Studio (Lossless) + 6 Perfis'
 })
 
-// Lista de cartões com URLs de logos oficiais
 const cardBrands = [
-  { id: 'visa', name: 'VISA', logo: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg' },
+  { id: 'visa', name: 'VISA', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg' },
   { id: 'master', name: 'Mastercard', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg' },
-  { id: 'elo', name: 'Elo', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/05/Elo_logo.svg' },
+  { id: 'elo', name: 'Elo', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f2/Elo_logo_2022.svg' },
   { id: 'amex', name: 'Amex', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg' },
-  { id: 'hiper', name: 'Hipercard', logo: 'https://upload.wikimedia.org/wikipedia/commons/b/b2/Hipercard_logo.svg' }
+  { id: 'hiper', name: 'Hipercard', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Hipercard_logo.svg' }
 ]
 
 const handleCheckout = () => {
@@ -26,8 +26,9 @@ const handleCheckout = () => {
   <div class="checkout-wrapper">
     <div class="checkout-card">
       <header class="header">
-        <h1 class="logo">🎵 Music<span>Stream</span></h1>
-        <button class="btn-text">Mudar plano</button>
+        <h1 class="logo">Sound<span>fy</span></h1>
+        
+        <router-link to="/" class="btn-text">Mudar plano</router-link>
       </header>
 
       <section class="summary">
@@ -68,7 +69,7 @@ const handleCheckout = () => {
             <input type="radio" v-model="paymentMethod" value="pix">
             <div class="content">
               <span class="title">Pix</span>
-              <span class="badge">Aprovação na hora</span>
+              <span class="badge">Aprovação imediata</span>
             </div>
           </div>
         </label>
@@ -79,20 +80,21 @@ const handleCheckout = () => {
       </button>
 
       <p class="legal">
-        Cancele quando quiser. Sujeito aos Termos de Uso.
+        Ambiente seguro e criptografado. Cancele quando quiser.
       </p>
     </div>
   </div>
 </template>
 
 <style scoped>
+
 .checkout-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100vw;
   height: 100vh;
-  background-color: #121212;
+  background-color: #020617; 
   font-family: 'Inter', sans-serif;
   position: fixed;
   top: 0;
@@ -100,118 +102,122 @@ const handleCheckout = () => {
 }
 
 .checkout-card {
-  background: #181818;
+  background: #0f172a; 
   width: 100%;
-  padding: 2rem;
+  padding: 2.5rem;
   display: flex;
   flex-direction: column;
-  max-width: 450px;
+  max-width: 480px;
   border-radius: 1.5rem;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
 }
 
-.logo { font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0; }
-.logo span { color: #1db954; }
+.logo { font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0; }
+.logo span { color: #3b82f6; } 
 
 .btn-text {
   background: none;
   border: none;
-  color: #b3b3b3;
+  color: #94a3b8;
   font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
-  font-size: 0.8rem;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: color 0.2s;
 }
 
+.btn-text:hover { color: #fff; }
+
 .summary {
-  background: #282828;
-  padding: 1.2rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1.5rem;
   border-radius: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  border: 1px solid #333;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .summary h3 { margin: 0; font-size: 1rem; color: #fff; }
-.summary p { margin: 0.2rem 0 0; font-size: 0.8rem; color: #b3b3b3; }
-.price { font-weight: 800; font-size: 1.2rem; color: #fff; }
-.price span { font-size: 0.8rem; color: #b3b3b3; }
+.summary p { margin: 0.2rem 0 0; font-size: 0.8rem; color: #94a3b8; }
+.price { font-weight: 800; font-size: 1.3rem; color: #fff; }
+.price span { font-size: 0.85rem; color: #94a3b8; }
 
-.methods h4 { margin-bottom: 1rem; font-size: 0.9rem; color: #fff; text-transform: uppercase; letter-spacing: 1px; }
+.methods h4 { margin-bottom: 1.2rem; font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; }
 
 .method-tile {
   display: flex;
   flex-direction: column;
-  padding: 1rem;
-  border: 2px solid #333;
-  border-radius: 0.75rem;
-  margin-bottom: 0.8rem;
+  padding: 1.2rem;
+  border: 2px solid #1e293b;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: #fff;
 }
 
 .method-tile.active {
-  border-color: #1db954;
-  background-color: #242424;
+  border-color: #3b82f6; 
+  background-color: rgba(59, 130, 246, 0.05);
 }
 
 .tile-main {
   display: flex;
-  gap: 1rem;
+  gap: 1.2rem;
   align-items: center;
 }
 
-.method-tile input { accent-color: #1db954; width: 1.1rem; height: 1.1rem; }
+.method-tile input { accent-color: #3b82f6; width: 1.2rem; height: 1.2rem; }
 
 .badge {
-  background: #1db954;
-  color: #000;
-  font-size: 0.65rem;
-  font-weight: 700;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  margin-left: 0.5rem;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 50px;
+  margin-left: 0.8rem;
+  text-transform: uppercase;
 }
 
-/* Estilos da lista de cartões */
 .card-list {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #333;
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .subtitle {
   font-size: 0.75rem;
-  color: #b3b3b3;
-  margin-bottom: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 1rem;
 }
 
 .brands-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
+  gap: 0.8rem;
 }
 
 .brand-badge {
   background: #ffffff;
-  padding: 0.4rem;
-  border-radius: 4px;
+  padding: 0.3rem;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 45px;
-  height: 28px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  width: 50px; 
+  height: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
 }
 
 .card-logo {
@@ -220,10 +226,9 @@ const handleCheckout = () => {
   object-fit: contain;
 }
 
-/* Animação */
 .expand-enter-active, .expand-leave-active {
-  transition: all 0.3s ease;
-  max-height: 200px;
+  transition: all 0.4s ease;
+  max-height: 250px;
   overflow: hidden;
 }
 .expand-enter-from, .expand-leave-to {
@@ -233,27 +238,29 @@ const handleCheckout = () => {
 
 .btn-primary {
   width: 100%;
-  background: #1db954;
+  background: #3b82f6;
   color: white;
   border: none;
-  padding: 1rem;
-  border-radius: 500px;
+  padding: 1.2rem;
+  border-radius: 12px;
   font-weight: 700;
   font-size: 1rem;
-  margin-top: 1rem;
+  margin-top: 1.5rem;
   cursor: pointer;
-  transition: all 0.2s;
+  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s;
 }
 
 .btn-primary:hover { 
-  background: #1ed760; 
-  transform: scale(1.02);
+  background: #2563eb; 
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4);
 }
 
 .legal {
   text-align: center;
-  font-size: 0.7rem;
-  color: #777;
-  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: #475569;
+  margin-top: 2rem;
 }
 </style>
