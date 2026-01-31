@@ -26,7 +26,7 @@ const handleCheckout = () => {
   <div class="checkout-wrapper">
     <div class="checkout-card">
       <header class="header">
-        <h1 class="logo">Sound<span>fy</span></h1>
+        <h1 class="logo"><span></span></h1>
         
         <router-link to="/" class="btn-text">Mudar plano</router-link>
       </header>

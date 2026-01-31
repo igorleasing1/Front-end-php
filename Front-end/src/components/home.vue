@@ -8,31 +8,31 @@ const isLoading = ref(false)
 const plans = [
   {
     id: 'free',
-    name: 'Start',
+    name: 'Gratuito',
     price: '0,00',
     description: 'Para quem ama música e não quer gastar nada agora.',
     features: ['Acesso a 50 milhões de faixas', 'Modo aleatório inteligente', 'Qualidade padrão eficiente'],
-    buttonText: 'Criar conta grátis',
+    buttonText: 'testar',
     color: '#64748b',
     featured: false
   },
   {
     id: 'basic',
-    name: 'Premium',
+    name: 'Intermediario',
     price: '14,90',
     description: 'A escolha inteligente para ouvir sem interrupções.',
     features: ['Zero anúncios', 'Baixe para ouvir offline', 'Pule faixas à vontade', 'Áudio de alta definição'],
-    buttonText: 'Testar Premium',
+    buttonText: 'Testar ',
     color: '#3b82f6',
     featured: false
   },
   {
     id: 'premium',
-    name: 'Audiophile',
+    name: 'Premium',
     price: '29,90',
     description: 'Para quem exige a perfeição em cada nota.',
     features: ['Qualidade Master Studio (Lossless)', 'Dolby Atmos Espacial', 'Acesso a lançamentos exclusivos', 'Plano Família (até 6 contas)'],
-    buttonText: 'Quero a melhor experiência',
+    buttonText: 'Testar ',
     color: '#8b5cf6',
     featured: true
   }
@@ -67,9 +67,9 @@ const handleNavigation = (e) => {
         <div class="nav-right">
           <div class="nav-links">
             <a href="#explorar">Planos</a>
-            <a href="#sobre">Recursos</a>
+            
           </div>
-          <button class="btn-login">Acessar Conta</button>
+          <button class="btn-login">Login</button>
         </div>
       </div>
     </nav>
@@ -133,7 +133,7 @@ const handleNavigation = (e) => {
     </section>
 
     <footer class="site-footer">
-      <p>&copy; 2026 Soundfy. Feito para quem vive de música.</p>
+      <p>&copy; </p>
     </footer>
   </div>
 </template>
