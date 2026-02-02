@@ -69,7 +69,7 @@ const handleNavigation = (e) => {
             <a href="#explorar">Planos</a>
             
           </div>
-          <button class="btn-login">Login</button>
+          <RouterLink to="/login" class="btn-login">Login</RouterLink>
         </div>
       </div>
     </nav>
