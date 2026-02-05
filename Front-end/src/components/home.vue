@@ -1,9 +1,10 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const isLoading = ref(false)
+const isProfileOpen = ref(false)
 
 const plans = [
   {
@@ -45,6 +46,19 @@ const handleNavigation = (e) => {
     router.push('/pagamento')
   }, 1200)
 }
+
+const toggleProfile = () => {
+  isProfileOpen.value = !isProfileOpen.value
+}
+
+const closeMenu = (e) => {
+  if (!e.target.closest('.profile-container')) {
+    isProfileOpen.value = false
+  }
+}
+
+onMounted(() => window.addEventListener('click', closeMenu))
+onUnmounted(() => window.removeEventListener('click', closeMenu))
 </script>
 
 <template>
@@ -65,7 +79,31 @@ const handleNavigation = (e) => {
         </div>
         <div class="nav-right">
           <a href="#explorar" class="nav-link">Assine o premium</a>
-          <button class="btn-outline">Entrar</button>
+          
+          <div class="profile-container">
+            <button class="profile-trigger" @click.stop="toggleProfile">
+              <div class="avatar">
+                <img src="https://ui-avatars.com/api/?name=User&background=2563eb&color=fff" alt="Perfil">
+              </div>
+              <svg class="chevron" :class="{ 'active': isProfileOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </button>
+
+            <Transition name="slide-up">
+              <div v-if="isProfileOpen" class="profile-dropdown">
+                <div class="dropdown-header">
+                  <p class="user-name">Usuário AudioCore</p>
+                  <p class="user-email">ouvinte@exemplo.com</p>
+                </div>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item" @click="router.push('/perfil')">👤 Meu Perfil</button>
+                <button class="dropdown-item" @click="router.push('/configuracoes')">⚙️ Configurações</button>
+                <div class="dropdown-divider"></div>
+                <button class="dropdown-item logout">🚪 Sair</button>
+              </div>
+            </Transition>
+          </div>
         </div>
       </div>
     </nav>
@@ -133,10 +171,6 @@ const handleNavigation = (e) => {
 </template>
 
 <style>
-/* -------------------------------------------------- 
-  1. CONFIGURAÇÕES GLOBAIS & VARIÁVEIS
-  -------------------------------------------------- 
-*/
 :root {
   --bg-dark: #020617;
   --bg-card: #0f172a;
@@ -146,8 +180,6 @@ const handleNavigation = (e) => {
   --text-dim: #94a3b8;
   --border-subtle: rgba(255, 255, 255, 0.06);
   --glass: rgba(255, 255, 255, 0.02);
-  
-  /* Curva de animação sofisticada */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -165,10 +197,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* -------------------------------------------------- 
-  2. NAVEGAÇÃO (NAVBAR)
-  -------------------------------------------------- 
-*/
 .navbar {
   position: fixed;
   top: 0;
@@ -206,7 +234,7 @@ body {
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 2.5rem;
+  gap: 1.5rem;
 }
 
 .nav-link {
@@ -221,28 +249,107 @@ body {
   color: #fff;
 }
 
-.btn-outline {
-  background: transparent;
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  padding: 0.6rem 1.25rem;
+.profile-container {
+  position: relative;
+}
+
+.profile-trigger {
+  background: var(--glass);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 8px 4px 4px;
   border-radius: 99px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
+  transition: 0.3s;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--primary);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chevron {
+  width: 16px;
+  height: 16px;
+  color: var(--text-dim);
+  transition: transform 0.3s;
+}
+
+.chevron.active {
+  transform: rotate(180deg);
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 220px;
+  background: #0f172a;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 8px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  z-index: 1001;
+}
+
+.dropdown-header {
+  padding: 12px;
+}
+
+.user-name {
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.user-email {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  margin: 2px 0 0 0;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: var(--border-subtle);
+  margin: 8px 0;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  color: var(--text-dim);
+  text-decoration: none;
   font-size: 0.85rem;
-  font-weight: 600;
-  transition: all 0.3s var(--ease);
+  border-radius: 8px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: 0.2s;
 }
 
-.btn-outline:hover {
-  background: #fff;
-  color: var(--bg-dark);
-  border-color: #fff;
+.dropdown-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: #fff;
 }
 
-/* -------------------------------------------------- 
-  3. CABEÇALHO PRINCIPAL (HERO)
-  -------------------------------------------------- 
-*/
+.dropdown-item.logout {
+  color: #ef4444;
+}
+
 .hero {
   padding: 160px 1.5rem 80px;
   text-align: center;
@@ -295,10 +402,6 @@ body {
   box-shadow: 0 15px 30px -10px rgba(37, 99, 235, 0.5);
 }
 
-/* -------------------------------------------------- 
-  4. SEÇÃO DE BOAS-VINDAS
-  -------------------------------------------------- 
-*/
 .welcome {
   padding: 40px 1.5rem;
 }
@@ -327,10 +430,6 @@ body {
   margin: 0 auto;
 }
 
-/* -------------------------------------------------- 
-  5. CARDS DE PREÇO (PRICING)
-  -------------------------------------------------- 
-*/
 .pricing {
   max-width: 1200px;
   margin: 0 auto;
@@ -384,7 +483,9 @@ body {
   letter-spacing: 1.5px;
 }
 
-.featured .plan-label { color: #64748b; }
+.featured .plan-label {
+  color: #64748b;
+}
 
 .price-row {
   display: flex;
@@ -404,7 +505,9 @@ body {
   color: var(--text-dim);
 }
 
-.featured .freq { color: #64748b; }
+.featured .freq {
+  color: #64748b;
+}
 
 .plan-desc {
   font-size: 0.95rem;
@@ -414,7 +517,9 @@ body {
   line-height: 1.5;
 }
 
-.featured .plan-desc { color: #475569; }
+.featured .plan-desc {
+  color: #475569;
+}
 
 .features {
   list-style: none;
@@ -454,10 +559,6 @@ body {
   opacity: 0.9;
 }
 
-/* -------------------------------------------------- 
-  6. RODAPÉ & UTILS
-  -------------------------------------------------- 
-*/
 .footer {
   text-align: center;
   padding: 80px 1.5rem;
@@ -486,17 +587,41 @@ body {
   margin-bottom: 1.5rem;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
-/* Responsividade */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from,
+.slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
 @media (max-width: 1024px) {
-  .pricing-grid { grid-template-columns: 1fr 1fr; }
-  .card.featured { transform: scale(1); }
+  .pricing-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  .card.featured {
+    transform: scale(1);
+  }
 }
 
 @media (max-width: 768px) {
-  .pricing-grid { grid-template-columns: 1fr; }
-  .nav-right { display: none; }
-  .hero-title { letter-spacing: -1.5px; }
+  .pricing-grid {
+    grid-template-columns: 1fr;
+  }
+  .nav-right {
+    gap: 1rem;
+  }
+  .hero-title {
+    letter-spacing: -1.5px;
+  }
 }
 </style>
