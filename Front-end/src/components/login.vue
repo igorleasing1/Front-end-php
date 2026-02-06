@@ -98,7 +98,7 @@ const toggleMode = () => {
 
 .card-header { text-align: center; margin-bottom: 2rem; }
 .icon { font-size: 3rem; margin-bottom: 0.5rem; animation: float 3s ease-in-out infinite; }
-h2 { margin: 0; font-size: 1.8rem; background: linear-gradient(to right, #8a2be2, #00d4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+h2 { margin: 0; font-size: 1.8rem; background: linear-gradient(to right, #8a2be2, #00d4ff); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 p { color: #888; margin-top: 5px; font-size: 0.9rem; }
 
 .input-group { margin-bottom: 1rem; }
@@ -145,4 +145,4 @@ input:focus { border-color: #8a2be2; }
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
-</style>
+</style>np
