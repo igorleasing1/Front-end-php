@@ -1,7 +1,11 @@
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const paymentMethod = ref('credit-card')
+const isLoading = ref(false)
+const progress = ref(0)
 
 const plan = ref({
   name: 'Plano Audiophile',
@@ -17,17 +21,61 @@ const cardBrands = [
   { id: 'hiper', name: 'Hipercard', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Hipercard_logo.svg' }
 ]
 
+const startLoading = (callback) => {
+  isLoading.value = true
+  progress.value = 0
+  const interval = setInterval(() => {
+    if (progress.value < 90) {
+      progress.value += Math.random() * 15
+    }
+  }, 100)
+
+  setTimeout(() => {
+    clearInterval(interval)
+    progress.value = 100
+    callback()
+  }, 1200)
+}
+
+const handleGoHome = (e) => {
+  e.preventDefault()
+  startLoading(() => router.push('/'))
+}
+
 const handleCheckout = () => {
-  alert(`Processando pagamento via: ${paymentMethod.value}`)
+  startLoading(() => {
+    alert(`Pagamento processado via: ${paymentMethod.value}`)
+    isLoading.value = false
+  })
 }
 </script>
 
 <template>
   <div class="checkout-wrapper">
+    <Transition name="fade">
+      <div v-if="isLoading" class="loading-overlay">
+        <div class="progress-bar-top" :style="{ width: progress + '%' }"></div>
+        <div class="loading-content">
+          <div class="sound-wave">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <p class="loading-text">Sincronizando áudio...</p>
+        </div>
+      </div>
+    </Transition>
+
     <div class="checkout-card">
       <header class="header">
-        <h1 class="logo">MÚSICA<span>.</span></h1>
-        <router-link to="/" class="btn-text">Mudar plano</router-link>
+        <div class="header-left">
+          <button @click="handleGoHome" class="home-icon-btn" title="Voltar para Home">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+          </button>
+          <h1 class="logo">MÚSICA<span>.</span></h1>
+        </div>
+        <a href="#" @click="handleGoHome" class="btn-text">Mudar plano</a>
       </header>
 
       <section class="summary">
@@ -97,10 +145,6 @@ const handleCheckout = () => {
 </template>
 
 <style scoped>
-/* -------------------------------------------------- 
-  1. ESTRUTURA E FUNDO
-  -------------------------------------------------- 
-*/
 .checkout-wrapper {
   display: flex;
   justify-content: center;
@@ -121,15 +165,31 @@ const handleCheckout = () => {
   box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6);
 }
 
-/* -------------------------------------------------- 
-  2. CABEÇALHO
-  -------------------------------------------------- 
-*/
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 3rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.home-icon-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  transition: color 0.3s;
+}
+
+.home-icon-btn:hover {
+  color: #fff;
 }
 
 .logo { 
@@ -141,6 +201,61 @@ const handleCheckout = () => {
 }
 .logo span { color: #2563eb; }
 
+/* REUTILIZANDO O CSS DO LOADING */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: #020617;
+  z-index: 5000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.progress-bar-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: #2563eb;
+  box-shadow: 0 0 15px #2563eb;
+  transition: width 0.3s ease;
+}
+
+.sound-wave {
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  height: 40px;
+  margin: 0 auto 1.5rem;
+  justify-content: center;
+}
+
+.sound-wave span {
+  width: 5px;
+  background: #2563eb;
+  border-radius: 10px;
+  animation: wave 1s ease-in-out infinite;
+}
+
+.sound-wave span:nth-child(1) { height: 20%; animation-delay: 0.1s; }
+.sound-wave span:nth-child(2) { height: 100%; animation-delay: 0.2s; }
+.sound-wave span:nth-child(3) { height: 60%; animation-delay: 0.3s; }
+.sound-wave span:nth-child(4) { height: 85%; animation-delay: 0.4s; }
+.sound-wave span:nth-child(5) { height: 40%; animation-delay: 0.5s; }
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.6); }
+}
+
+.loading-text {
+  color: #f8fafc;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+/* --- RESTANTE DO SEU CSS ORIGINAL --- */
 .btn-text {
   color: #64748b;
   text-decoration: none;
@@ -150,10 +265,6 @@ const handleCheckout = () => {
 }
 .btn-text:hover { color: #fff; }
 
-/* -------------------------------------------------- 
-  3. RESUMO DO PEDIDO
-  -------------------------------------------------- 
-*/
 .summary {
   background: rgba(255, 255, 255, 0.02);
   padding: 2rem;
@@ -183,10 +294,6 @@ const handleCheckout = () => {
 .currency { font-size: 1rem; font-weight: 700; margin-right: 4px; }
 .period { font-size: 0.85rem; color: #64748b; margin-left: 2px; }
 
-/* -------------------------------------------------- 
-  4. MÉTODOS DE PAGAMENTO
-  -------------------------------------------------- 
-*/
 .methods h4 { 
   margin-bottom: 1.5rem; 
   font-size: 0.75rem; 
@@ -218,7 +325,6 @@ const handleCheckout = () => {
   gap: 1.25rem;
 }
 
-/* Radio Customizado */
 .radio-custom { position: relative; width: 20px; height: 20px; }
 .radio-custom input { opacity: 0; position: absolute; }
 .check {
@@ -243,10 +349,6 @@ const handleCheckout = () => {
   text-transform: uppercase;
 }
 
-/* -------------------------------------------------- 
-  5. DETALHES DO CARTÃO
-  -------------------------------------------------- 
-*/
 .card-details-area {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
@@ -265,10 +367,6 @@ const handleCheckout = () => {
 }
 .card-logo { width: 100%; height: 100%; object-fit: contain; }
 
-/* -------------------------------------------------- 
-  6. BOTÃO E SEGURANÇA
-  -------------------------------------------------- 
-*/
 .btn-primary {
   width: 100%;
   background: #2563eb;
@@ -303,11 +401,13 @@ const handleCheckout = () => {
 
 .lock-icon { width: 14px; height: 14px; }
 
-/* Animação Expand */
 .expand-enter-active, .expand-leave-active { transition: all 0.3s ease; max-height: 100px; overflow: hidden; }
 .expand-enter-from, .expand-leave-to { max-height: 0; opacity: 0; }
 
+.fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
 @media (max-width: 480px) {
-  .checkout-card { padding: 2rem; border-radius: 0; height: 100vh; max-width: 100%; }
+  .checkout-card { padding: 2rem; border-radius: 0; min-height: 100vh; max-width: 100%; }
 }
 </style>
