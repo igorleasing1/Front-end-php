@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../components/home.vue' 
+import LoginView from '../components/login.vue' 
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,12 +16,16 @@ const router = createRouter({
       name: 'pagamento',
       component: () => import('../components/Pagamentos.vue')
     },
-    // ADICIONE ESTA ROTA ABAIXO:
     {
       path: '/perfil',
       name: 'perfil',
-      // Certifique-se de que o nome do arquivo é Perfil.vue ou perfil.vue
       component: () => import('../components/perfil.vue') 
+    },
+    // ROTA DE LOGIN ADICIONADA:
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../components/login.vue') // Ou use o import dinâmico como nos de cima
     }
   ]
 })

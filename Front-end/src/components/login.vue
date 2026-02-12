@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import api from '../api/index.js';
 
 const router = useRouter();
-const isLogin = ref(true); // Controla se é Login ou Cadastro
+const isLogin = ref(true);
+const loading = ref(false); // Estado para feedback visual
 
 const form = ref({
   name: '',
@@ -14,15 +16,30 @@ const form = ref({
 const title = computed(() => isLogin.value ? 'Bem-vindo' : 'Nova Conta');
 const buttonText = computed(() => isLogin.value ? 'Entrar' : 'Cadastrar');
 
-const handleSubmit = () => {
-  if (isLogin.value) {
-    console.log('Login efetuado', form.value);
-    // Simula login e vai para Home
-    router.push('/'); 
-  } else {
-    console.log('Cadastro efetuado', form.value);
-    // Simula cadastro e entra
-    router.push('/');
+const handleSubmit = async () => {
+  loading.value = true;
+  try {
+    if (isLogin.value) {
+      // Endpoint: /login (POST)
+      const response = await api.post('/login', {
+        email: form.value.email,
+        password: form.value.password
+      });
+      
+      // Laravel geralmente retorna ['token' => '...']
+      localStorage.setItem('token', response.data.token);
+      router.push('/'); 
+    } else {
+      // Para cadastro, você precisará de uma rota Route::post('/register') no Laravel
+      const response = await api.post('/register', form.value);
+      localStorage.setItem('token', response.data.token);
+      router.push('/');
+    }
+  } catch (error) {
+    console.error('Erro na autenticação:', error.response?.data?.message || error.message);
+    alert('Falha na autenticação. Verifique seus dados.');
+  } finally {
+    loading.value = false;
   }
 };
 

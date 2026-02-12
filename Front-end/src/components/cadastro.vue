@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '../api/index.js'; 
+
 
 const router = useRouter()
 const isLoading = ref(false)
@@ -13,9 +15,10 @@ const form = ref({
   terms: false
 })
 
-const handleRegister = (e) => {
+const handleRegister = async (e) => {
   e.preventDefault()
   
+  // Validação básica de senha no front-end
   if (form.value.password !== form.value.confirmPassword) {
     alert("As senhas não coincidem!")
     return
@@ -23,14 +26,36 @@ const handleRegister = (e) => {
 
   isLoading.value = true
   
-  // Simulação de criação de conta
-  setTimeout(() => {
+  try {
+   // No handleSubmit do seu componente de Registro
+const response = await api.post('/user/criar', {
+  name: form.value.name,
+  email: form.value.email,
+  password: form.value.password,
+  // Certifique-se de que os nomes dos campos batem com o que o UserController espera
+});
+
+    // 2. Se o backend já logar o usuário após o cadastro, salve o token
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      alert("Conta criada com sucesso! Redirecionando...");
+      router.push('/'); // Vai para a Home
+    } else {
+      // 3. Se apenas criar a conta, manda para o login
+      alert("Conta criada com sucesso! Agora faça seu login.");
+      router.push('/login');
+    }
+
+  } catch (error) {
+    // Trata erros vindos do Laravel (ex: email já existe)
+    const mensagemErro = error.response?.data?.message || "Erro ao criar conta. Tente novamente.";
+    alert(mensagemErro);
+    console.error("Erro no registro:", error);
+  } finally {
     isLoading.value = false
-    router.push('/login')
-  }, 2000)
+  }
 }
 </script>
-
 <template>
   <div class="register-wrapper">
     <div class="side-info">
