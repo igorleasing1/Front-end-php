@@ -29,7 +29,7 @@ const fetchMusicas = async () => {
   }
 };
 
-// Filtro seguro para evitar o erro de 'undefined' no console
+
 const filteredMusicas = computed(() => {
   if (!musicas.value) return [];
   const busca = (searchQuery.value || '').toLowerCase();
@@ -151,3 +151,4 @@ onMounted(fetchMusicas);
   margin-top: 4px;
 }
 </style>
+

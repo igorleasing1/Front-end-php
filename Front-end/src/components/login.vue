@@ -4,48 +4,57 @@ import { useRouter } from 'vue-router';
 import api from '../api/index.js';
 
 const router = useRouter();
-const isLogin = ref(true);
-const loading = ref(false); // Estado para feedback visual
+const isLoading = ref(false);
+const errorMessage = ref('');
 
 const form = ref({
-  name: '',
   email: '',
   password: ''
 });
 
-const title = computed(() => isLogin.value ? 'Bem-vindo' : 'Nova Conta');
-const buttonText = computed(() => isLogin.value ? 'Entrar' : 'Cadastrar');
+
+const isFormValid = computed(() => {
+  return form.value.email.includes('@') && form.value.password.length >= 6;
+});
 
 const handleSubmit = async () => {
-  loading.value = true;
+  if (!isFormValid.value) return;
+
+  isLoading.value = true;
+  errorMessage.value = '';
+
   try {
-    if (isLogin.value) {
-      // Endpoint: /login (POST)
-      const response = await api.post('/login', {
-        email: form.value.email,
-        password: form.value.password
-      });
-      
-      // Laravel geralmente retorna ['token' => '...']
-      localStorage.setItem('token', response.data.token);
-      router.push('/'); 
-    } else {
-      // Para cadastro, você precisará de uma rota Route::post('/register') no Laravel
-      const response = await api.post('/register', form.value);
-      localStorage.setItem('token', response.data.token);
-      router.push('/');
+   
+    const response = await api.post('/login', {
+      email: form.value.email,
+      password: form.value.password
+    });
+
+
+   
+    if (response.data.token) {
+      localStorage.setItem('user_token', response.data.token);
     }
+    localStorage.setItem('user_data', JSON.stringify(response.data.user));
+
+  
+    router.push('/');
+    
   } catch (error) {
-    console.error('Erro na autenticação:', error.response?.data?.message || error.message);
-    alert('Falha na autenticação. Verifique seus dados.');
+ 
+    if (error.response && error.response.status === 401) {
+      errorMessage.value = "E-mail ou senha incorretos.";
+    } else {
+      errorMessage.value = error.response?.data?.message || "Erro ao conectar com o servidor.";
+    }
+    console.error('Erro no login:', error);
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
 };
 
-const toggleMode = () => {
-  isLogin.value = !isLogin.value;
-  form.value = { name: '', email: '', password: '' };
+const goSignup = () => {
+  router.push('/cadastro');
 };
 </script>
 
@@ -56,110 +65,201 @@ const toggleMode = () => {
     <div class="card">
       <div class="card-header">
         <div class="icon">🎵</div>
-        <h2>{{ title }}</h2>
-        <p>Acesse sua biblioteca musical</p>
+        <h2>Bem-vindo</h2>
+        <p v-if="!errorMessage">Acesse sua biblioteca musical</p>
+        <p v-else class="error-msg">{{ errorMessage }}</p>
       </div>
 
       <form @submit.prevent="handleSubmit">
-        <div v-if="!isLogin" class="input-group">
-          <input type="text" v-model="form.name" placeholder="Nome Artístico" required />
-        </div>
-        
         <div class="input-group">
-          <input type="email" v-model="form.email" placeholder="Email" required />
+          <input 
+            type="email" 
+            v-model="form.email" 
+            placeholder="Email" 
+            :disabled="isLoading"
+            required 
+          />
         </div>
 
         <div class="input-group">
-          <input type="password" v-model="form.password" placeholder="Senha" required />
+          <input 
+            type="password" 
+            v-model="form.password" 
+            placeholder="Senha" 
+            :disabled="isLoading"
+            required 
+          />
         </div>
 
-        <button type="submit" class="btn-main">{{ buttonText }}</button>
+        <button type="submit" class="btn-main" :disabled="!isFormValid || isLoading">
+          <span v-if="isLoading">Verificando...</span>
+          <span v-else>Entrar</span>
+        </button>
       </form>
 
       <div class="divider">ou</div>
 
-      
       <p class="footer-text">
-        {{ isLogin ? 'Não tem conta?' : 'Já possui conta?' }}
-        <a href="#" @click.prevent="toggleMode">
-          {{ isLogin ? 'Crie agora' : 'Faça login' }}
-        </a>
+        Não tem conta? 
+        <a href="#" @click.prevent="goSignup">Crie agora</a>
       </p>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* COPIE O CSS ABAIXO PARA DAR O VISUAL DE MÚSICA */
+/* Mantendo seus estilos originais e adicionando ajustes de feedback */
+
+.error-msg {
+  color: #f87171 !important; /* Vermelho suave */
+  font-weight: 500;
+  font-size: 0.85rem !important;
+}
+
 .login-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  background-color: #0f0f0f;
-  color: white;
-  position: relative;
-  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  background-color: #030712; 
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  overflow: hidden; 
 }
 
 .card {
-  background: rgba(30, 30, 30, 0.7);
-  backdrop-filter: blur(15px);
-  padding: 2.5rem;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(25px);
+  padding: 3rem 3.5rem; 
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   width: 100%;
-  max-width: 380px;
+  max-width: 420px; 
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6);
   z-index: 10;
+  display: flex;
+  flex-direction: column;
 }
 
-.card-header { text-align: center; margin-bottom: 2rem; }
-.icon { font-size: 3rem; margin-bottom: 0.5rem; animation: float 3s ease-in-out infinite; }
-h2 { margin: 0; font-size: 1.8rem; background: linear-gradient(to right, #8a2be2, #00d4ff); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-p { color: #888; margin-top: 5px; font-size: 0.9rem; }
+.card-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
 
-.input-group { margin-bottom: 1rem; }
+.icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+  animation: float 4s ease-in-out infinite;
+}
+
+h2 {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #8a2be2 0%, #00d4ff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+p {
+  color: #9ca3af;
+  font-size: 0.95rem;
+  margin-top: 6px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
 input {
   width: 100%;
-  padding: 12px;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid #333;
-  border-radius: 8px;
-  color: white;
+  box-sizing: border-box;
+  padding: 14px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: #ffffff;
+  font-size: 1rem;
   outline: none;
+  transition: border-color 0.3s;
 }
-input:focus { border-color: #8a2be2; }
+
+input:focus {
+  border-color: #00d4ff;
+}
+
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .btn-main {
   width: 100%;
-  padding: 12px;
-  background: linear-gradient(45deg, #8a2be2, #00d4ff);
+  padding: 16px;
+  background: linear-gradient(90deg, #8a2be2, #00d4ff);
   border: none;
-  border-radius: 8px;
-  color: white;
-  font-weight: bold;
+  border-radius: 14px;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.1rem;
   cursor: pointer;
   margin-top: 10px;
+  transition: all 0.2s;
 }
 
-.divider { margin: 1.5rem 0; text-align: center; color: #555; font-size: 0.8rem; }
-
-.btn-spotify {
-  width: 100%;
-  padding: 12px;
-  background: #1DB954;
-  border: none;
-  border-radius: 25px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
+.btn-main:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 212, 255, 0.2);
 }
 
-.footer-text { margin-top: 1.5rem; text-align: center; font-size: 0.85rem; color: #888; }
-.footer-text a { color: #00d4ff; text-decoration: none; margin-left: 5px; }
+.btn-main:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+.divider {
+  margin: 1.5rem 0;
+  text-align: center;
+  color: #374151;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.footer-text {
+  text-align: center;
+  font-size: 0.95rem;
+  color: #9ca3af;
+}
+
+.footer-text a {
+  color: #00d4ff;
+  text-decoration: none;
+  font-weight: 700;
+}
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
 }
-</style>np
+
+.glow-shape {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(138, 43, 226, 0.1) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+</style>

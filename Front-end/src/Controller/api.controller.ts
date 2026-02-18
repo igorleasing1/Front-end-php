@@ -10,4 +10,7 @@ const api: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: false,
+
 })
+
+export default api

@@ -1,145 +1,155 @@
-<script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 
-const router = useRouter()
-const paymentMethod = ref('credit-card')
-const isLoading = ref(false)
-const progress = ref(0)
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import api from '../api/index.js'; 
+
+const router = useRouter();
+
+// Configurações do Stripe
+const stripe = ref(null);
+const elements = ref(null);
+const cardElement = ref(null);
+const stripeError = ref('');
+
+// Estados da UI
+const currentStep = ref(1); 
+const isLoading = ref(false);
+const progress = ref(0);
+const paymentMethod = ref('credit-card');
+
+// Dados que o Vue reclamou que estavam faltando
+const cardBrands = [
+  { id: 'visa', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg' },
+  { id: 'master', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg' },
+  { id: 'elo', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f2/Elo_logo_2022.svg' }
+];
 
 const plan = ref({
   name: 'Plano Audiophile',
   price: 29.90,
   description: 'Qualidade Master Studio (Lossless) + 6 Perfis'
-})
+});
 
-const cardBrands = [
-  { id: 'visa', name: 'VISA', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg' },
-  { id: 'master', name: 'Mastercard', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg' },
-  { id: 'elo', name: 'Elo', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f2/Elo_logo_2022.svg' },
-  { id: 'amex', name: 'Amex', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg' },
-  { id: 'hiper', name: 'Hipercard', logo: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Hipercard_logo.svg' }
-]
+// Inicialização do Stripe
+onMounted(() => {
+  // ATENÇÃO: Use a chave que começa com "pk_test" aqui!
+  if (window.Stripe) {
+    stripe.value = window.Stripe('pk_test_51SxyEyCOkGmWUGLjtTG98ajkfWkSfRU8XeBs9akRV7tr1iFDTt6l0SJaUebNFYTfL1d5aklHA2lLMwHYrgSzukDm00Gx96fuTg');
+  } else {
+    const script = document.createElement('script');
+    script.src = "https://js.stripe.com/v3/";
+    script.onload = () => {
+      stripe.value = window.Stripe('pk_test_51SxyEyCOkGmWUGLjtTG98ajkfWkSfRU8XeBs9akRV7tr1iFDTt6l0SJaUebNFYTfL1d5aklHA2lLMwHYrgSzukDm00Gx96fuTg');
+    };
+    document.head.appendChild(script);
+  }
+});
 
-const startLoading = (callback) => {
-  isLoading.value = true
-  progress.value = 0
-  const interval = setInterval(() => {
-    if (progress.value < 90) {
-      progress.value += Math.random() * 15
+const mountStripe = () => {
+  elements.value = stripe.value.elements();
+  const style = {
+    base: {
+      color: "#ffffff",
+      fontFamily: '"Inter", sans-serif',
+      fontSize: "16px",
+      "::placeholder": { color: "#64748b" }
     }
-  }, 100)
-
+  };
+  cardElement.value = elements.value.create("card", { style, hidePostalCode: true });
+  
   setTimeout(() => {
-    clearInterval(interval)
-    progress.value = 100
-    callback()
-  }, 1200)
-}
+    cardElement.value.mount("#card-element");
+    cardElement.value.on('change', (event) => {
+      stripeError.value = event.error ? event.error.message : '';
+    });
+  }, 100);
+};
 
-const handleGoHome = (e) => {
-  e.preventDefault()
-  startLoading(() => router.push('/'))
-}
+const handleAction = () => {
+  if (currentStep.value === 1) {
+    currentStep.value = 2;
+    mountStripe();
+  } else {
+    processPayment();
+  }
+};
 
-const handleCheckout = () => {
-  startLoading(() => {
-    alert(`Pagamento processado via: ${paymentMethod.value}`)
-    isLoading.value = false
-  })
-}
+const processPayment = async () => {
+  isLoading.value = true;
+  progress.value = 30;
+
+  try {
+    // 1. Pega o client_secret do seu Laravel
+    const { data } = await api.post('/create-payment-intent', {
+      amount: plan.value.price * 100,
+    });
+
+    progress.value = 70;
+
+    // 2. Confirma o pagamento com o Stripe (Validação Real)
+    const result = await stripe.value.confirmCardPayment(data.client_secret, {
+      payment_method: { card: cardElement.value }
+    });
+
+    if (result.error) {
+      stripeError.value = result.error.message;
+      isLoading.value = false;
+    } else {
+      progress.value = 100;
+      alert('Assinatura realizada com sucesso!');
+      router.push('/');
+    }
+  } catch (e) {
+    stripeError.value = "Erro ao conectar com o servidor.";
+    isLoading.value = false;
+  }
+};
 </script>
 
 <template>
   <div class="checkout-wrapper">
     <Transition name="fade">
       <div v-if="isLoading" class="loading-overlay">
-        <div class="progress-bar-top" :style="{ width: progress + '%' }"></div>
-        <div class="loading-content">
-          <div class="sound-wave">
-            <span></span><span></span><span></span><span></span><span></span>
-          </div>
-          <p class="loading-text">Sincronizando áudio...</p>
-        </div>
+        <div class="progress-bar" :style="{ width: progress + '%' }"></div>
+        <div class="sound-wave"><span></span><span></span><span></span></div>
+        <p>Validando com Stripe...</p>
       </div>
     </Transition>
 
     <div class="checkout-card">
       <header class="header">
-        <div class="header-left">
-          <button @click="handleGoHome" class="home-icon-btn" title="Voltar para Home">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-          </button>
-          <h1 class="logo">MÚSICA<span>.</span></h1>
-        </div>
-        <a href="#" @click="handleGoHome" class="btn-text">Mudar plano</a>
+        <button @click="currentStep = 1" v-if="currentStep === 2" class="back-btn">←</button>
+        <h1 class="logo">MÚSICA<span>.</span></h1>
       </header>
 
-      <section class="summary">
-        <div class="info">
-          <span class="label">Plano selecionado</span>
-          <h3>{{ plan.name }}</h3>
-          <p>{{ plan.description }}</p>
-        </div>
-        <div class="price">
-          <span class="currency">R$</span>
-          <span class="val">{{ plan.price.toFixed(2).replace('.', ',') }}</span>
-          <span class="period">/mês</span>
-        </div>
-      </section>
+      <div class="summary">
+        <span class="label">Plano Selecionado</span>
+        <h3>{{ plan.name }}</h3>
+        <p class="price">R$ 29,90</p>
+      </div>
 
-      <section class="methods">
-        <h4>Forma de pagamento</h4>
-        
-        <label :class="['method-tile', { active: paymentMethod === 'credit-card' }]">
-          <div class="tile-main">
-            <div class="radio-custom">
-              <input type="radio" v-model="paymentMethod" value="credit-card">
-              <span class="check"></span>
-            </div>
-            <div class="content">
-              <span class="title">Cartão de Crédito</span>
+      <Transition name="slide" mode="out-in">
+        <div v-if="currentStep === 1" key="step1">
+          <div class="method-tile active">
+            <span>Cartão de Crédito</span>
+            <div class="brands">
+              <img v-for="b in cardBrands" :key="b.id" :src="b.logo" class="mini-logo" />
             </div>
           </div>
-
-          <Transition name="expand">
-            <div v-if="paymentMethod === 'credit-card'" class="card-details-area">
-              <p class="subtitle">Bandeiras aceitas</p>
-              <div class="brands-grid">
-                <div v-for="brand in cardBrands" :key="brand.id" class="brand-badge">
-                  <img :src="brand.logo" :alt="brand.name" class="card-logo">
-                </div>
-              </div>
-            </div>
-          </Transition>
-        </label>
-
-        <label :class="['method-tile', { active: paymentMethod === 'pix' }]">
-          <div class="tile-main">
-            <div class="radio-custom">
-              <input type="radio" v-model="paymentMethod" value="pix">
-              <span class="check"></span>
-            </div>
-            <div class="content">
-              <span class="title">Pix</span>
-              <span class="status-badge">Liberação imediata</span>
-            </div>
-          </div>
-        </label>
-      </section>
-
-      <footer class="actions">
-        <button @click="handleCheckout" class="btn-primary">
-          Confirmar e Assinar
-        </button>
-        <div class="security-info">
-          <svg viewBox="0 0 24 24" fill="currentColor" class="lock-icon"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
-          Transação criptografada de ponta a ponta
         </div>
-      </footer>
+
+        <div v-else key="step2">
+          <div id="stripe-container">
+            <div id="card-element"></div>
+          </div>
+          <p v-if="stripeError" class="error-msg">{{ stripeError }}</p>
+        </div>
+      </Transition>
+
+      <button @click="handleAction" class="btn-primary" :disabled="isLoading">
+        {{ currentStep === 1 ? 'Continuar para Pagamento' : 'Finalizar Assinatura' }}
+      </button>
     </div>
   </div>
 </template>
@@ -304,7 +314,7 @@ const handleCheckout = () => {
 }
 
 .method-tile {
-  display: block;
+  
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.01);
   border: 2px solid #1e293b;
@@ -312,6 +322,7 @@ const handleCheckout = () => {
   margin-bottom: 1rem;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
 }
 
 .method-tile.active {
@@ -362,10 +373,12 @@ const handleCheckout = () => {
   background: #fff;
   padding: 0.4rem;
   border-radius: 8px;
-  width: 44px; height: 28px;
+  width: 22px; height: 28px;
   display: flex; align-items: center; justify-content: center;
 }
-.card-logo { width: 100%; height: 100%; object-fit: contain; }
+.card-logo { width: 1%;
+    height: 100%;
+    object-fit: contain;}
 
 .btn-primary {
   width: 100%;
@@ -386,6 +399,13 @@ const handleCheckout = () => {
   background: #1d4ed8;
   transform: translateY(-2px);
   box-shadow: 0 20px 30px -10px rgba(37, 99, 235, 0.5);
+}
+
+.mini-logo{
+  display: flex;
+  width: 80%;
+  height: 100px;
+ 
 }
 
 .security-info {

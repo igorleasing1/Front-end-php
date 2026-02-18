@@ -5,29 +5,24 @@ import { useRouter, RouterView } from 'vue-router'
 const router = useRouter()
 const isProfileOpen = ref(false)
 
-// Estados para o Loading Global
 const isLoading = ref(false)
 const progress = ref(0)
 
-// Monitoramento Global de Rotas
 router.beforeEach((to, from, next) => {
   isLoading.value = true
   progress.value = 0
   
-  // Efeito de progresso simulado
   const interval = setInterval(() => {
     if (progress.value < 90) {
       progress.value += Math.random() * 15
     }
   }, 100)
 
-  // Guardamos o interval no 'to' para limpar depois
   to.meta.interval = interval
   next()
 })
 
 router.afterEach((to) => {
-  // Pequeno delay para garantir que o usuário veja a transição suave
   setTimeout(() => {
     clearInterval(to.meta.interval)
     progress.value = 100
@@ -73,7 +68,7 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
       <div class="nav-content">
         <div class="nav-left-group">
           <button @click="goHome" class="home-btn" title="Home">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
               <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
@@ -85,7 +80,7 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
 
         <div class="nav-search">
           <div class="search-input-wrapper">
-            <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
+            <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5">
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
@@ -135,13 +130,21 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
 
 <style>
 :root {
-  --bg-dark: #020617;
+  --bg-dark: #030712;
   --primary: #2563eb;
   --text-dim: #94a3b8;
-  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --nav-height: 88px;
 }
 
-/* ESTILOS DO LOADING GLOBAL */
+body {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  background-color: var(--bg-dark);
+  font-family: 'Inter', sans-serif;
+}
+
 .global-loading {
   position: fixed;
   inset: 0;
@@ -157,9 +160,9 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
   position: absolute;
   top: 0;
   left: 0;
-  height: 3px;
-  background: var(--primary);
-  box-shadow: 0 0 15px var(--primary);
+  height: 4px;
+  background: linear-gradient(90deg, #8a2be2, #00d4ff);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
   transition: width 0.3s ease;
 }
 
@@ -167,48 +170,28 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
   display: flex;
   align-items: flex-end;
   gap: 5px;
-  height: 40px;
+  height: 45px;
   margin-bottom: 1.5rem;
 }
 
 .sound-wave span {
-  width: 5px;
+  width: 6px;
   background: var(--primary);
   border-radius: 10px;
   animation: wave-animation 1s ease-in-out infinite;
 }
 
-.sound-wave span:nth-child(1) { height: 20%; animation-delay: 0.1s; }
-.sound-wave span:nth-child(2) { height: 100%; animation-delay: 0.2s; }
-.sound-wave span:nth-child(3) { height: 60%; animation-delay: 0.3s; }
-.sound-wave span:nth-child(4) { height: 85%; animation-delay: 0.4s; }
-.sound-wave span:nth-child(5) { height: 40%; animation-delay: 0.5s; }
-
 @keyframes wave-animation {
   0%, 100% { transform: scaleY(1); }
-  50% { transform: scaleY(0.6); }
+  50% { transform: scaleY(0.4); }
 }
 
 .loading-text {
   color: #fff;
-  font-weight: 600;
-  letter-spacing: 1px;
-  font-size: 0.9rem;
-}
-
-/* TRANSITIONS */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.4s; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-
-/* ... Restante do seu CSS original (Navbar, Dropdown, etc) ... */
-
-.app-container {
-  background-color: var(--bg-dark);
-  min-height: 100vh;
-}
-
-.main-content {
-  padding-top: 72px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  font-size: 1rem;
+  text-transform: uppercase;
 }
 
 .navbar {
@@ -216,9 +199,9 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
   top: 0;
   left: 0;
   width: 100%;
-  height: 72px;
-  background: rgba(2, 6, 23, 0.85);
-  backdrop-filter: blur(12px);
+  height: var(--nav-height);
+  background: rgba(3, 7, 18, 0.9);
+  backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-subtle);
   z-index: 1000;
   display: flex;
@@ -227,87 +210,83 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
 
 .nav-content {
   width: 100%;
-  max-width: 1400px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 3rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.nav-left-group { display: flex; align-items: center; gap: 1.5rem; }
-
-.home-btn {
-  background: none; border: none; color: var(--text-dim);
-  cursor: pointer; padding: 4px; display: flex; transition: 0.3s;
+.logo-text { 
+  font-size: 1.6rem; 
+  font-weight: 950; 
+  color: #fff; 
+  letter-spacing: 1.5px;
 }
 
-.home-btn:hover { color: #fff; }
-
-.logo-text { font-size: 1.25rem; font-weight: 900; color: #fff; margin: 0; }
 .logo-text span { color: var(--primary); }
 
-.nav-search { flex: 1; max-width: 400px; margin: 0 2rem; }
-
-.search-input-wrapper { position: relative; display: flex; align-items: center; }
+.nav-search { 
+  flex: 1; 
+  max-width: 550px; 
+  margin: 0 3.5rem; 
+}
 
 .search-input-wrapper input {
-  width: 100%; background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle); border-radius: 99px;
-  padding: 9px 15px 9px 42px; color: #fff; font-size: 0.85rem; outline: none;
+  width: 100%; 
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-subtle); 
+  border-radius: 99px;
+  padding: 14px 20px 14px 52px; 
+  color: #fff; 
+  font-size: 1rem; 
+  outline: none;
+  transition: border-color 0.3s;
 }
 
-.search-icon { position: absolute; left: 14px; color: var(--text-dim); }
-
-.nav-right { display: flex; align-items: center; gap: 1.5rem; }
-
-.nav-auth { display: flex; align-items: center; gap: 1rem; }
-
-.btn-login {
-  background: none; border: none; color: var(--text-dim);
-  font-weight: 700; font-size: 0.85rem; cursor: pointer;
+.search-input-wrapper input:focus {
+  border-color: var(--primary);
+  background: rgba(255, 255, 255, 0.09);
 }
+
+.search-icon { position: absolute; left: 18px; color: var(--text-dim); }
 
 .btn-signup {
-  background: #fff; color: #000; border: none;
-  padding: 8px 18px; border-radius: 99px; font-weight: 700;
-  font-size: 0.85rem; cursor: pointer;
+  background: #fff; 
+  color: #000; 
+  padding: 14px 28px; 
+  border-radius: 99px; 
+  font-weight: 800;
+  font-size: 0.95rem; 
+  cursor: pointer;
+  border: none;
+  transition: transform 0.2s;
 }
 
-.profile-container { position: relative; }
+.btn-signup:hover { transform: scale(1.05); }
+
+.main-content {
+  padding-top: var(--nav-height);
+  min-height: 100vh;
+  box-sizing: border-box;
+}
 
 .profile-trigger {
-  background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle);
-  padding: 4px 8px 4px 4px; border-radius: 99px;
-  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  background: rgba(255,255,255,0.03); 
+  border: 1px solid var(--border-subtle);
+  padding: 6px 14px 6px 6px; 
+  border-radius: 99px;
+  display: flex; 
+  align-items: center; 
+  gap: 12px;
 }
 
-.avatar { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; }
-.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; }
 
-.chevron { width: 16px; height: 16px; color: var(--text-dim); transition: 0.3s; }
-.chevron.active { transform: rotate(180deg); }
-
-.profile-dropdown {
-  position: absolute; top: calc(100% + 12px); right: 0;
-  width: 220px; background: #0f172a; border: 1px solid var(--border-subtle);
-  border-radius: 16px; padding: 8px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-}
-
-.dropdown-header { padding: 12px; }
-.user-name { color: #fff; font-weight: 700; font-size: 0.9rem; margin: 0; }
-.user-email { color: var(--text-dim); font-size: 0.75rem; margin: 0; }
-.dropdown-divider { height: 1px; background: var(--border-subtle); margin: 8px 0; }
-
-.dropdown-item {
-  display: block; width: 100%; padding: 10px 12px; color: var(--text-dim);
-  border-radius: 8px; text-align: left; border: none; background: transparent;
-  cursor: pointer; font-size: 0.85rem;
-}
-
-.dropdown-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
-.dropdown-item.logout { color: #ef4444; }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 
 .slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s ease; }
-.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(-10px); }
+.slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translateY(-15px); }
 </style>

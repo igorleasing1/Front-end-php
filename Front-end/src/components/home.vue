@@ -1,44 +1,32 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '../api/index.js' 
 
 const router = useRouter()
 const isLoading = ref(false)
 const isProfileOpen = ref(false)
 const progress = ref(0)
 
-const plans = [
-  {
-    id: 'free',
-    name: 'Essencial',
-    price: '0,00',
-    description: 'A porta de entrada para sua jornada musical.',
-    features: ['50 milhões de faixas', 'Modo aleatório', 'Qualidade padrão'],
-    buttonText: 'Começar grátis',
-    color: '#64748b',
-    featured: false
-  },
-  {
-    id: 'basic',
-    name: 'Standard',
-    price: '14,90',
-    description: 'A escolha ideal para quem ouve todo dia.',
-    features: ['Zero anúncios', 'Modo offline', 'Pulos ilimitados', 'Áudio HD'],
-    buttonText: 'Assinar agora',
-    color: '#2563eb',
-    featured: false
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: '29,90',
-    description: 'O som definitivo para quem não aceita menos.',
-    features: ['Qualidade Lossless', 'Som Espacial', 'Lançamentos VIP', 'Até 6 contas'],
-    buttonText: 'Experimentar',
-    color: '#0f172a',
-    featured: true
+
+const plans = ref([])
+
+
+const fetchPlans = async () => {
+  try {
+    const { data } = await api.get('/getplanos')
+    
+    
+    plans.value = data.map(plan => ({
+      ...plan,
+      
+      featured: plan.id === 'premium' || plan.featured, 
+      color: plan.id === 'premium' ? '#0f172a' : (plan.id === 'basic' ? '#2563eb' : '#64748b')
+    }))
+  } catch (error) {
+    console.error("Erro ao carregar planos da API:", error)
   }
-]
+}
 
 const goHome = () => router.push('/')
 const goLogin = () => router.push('/login')
@@ -66,13 +54,18 @@ const toggleProfile = () => {
   isProfileOpen.value = !isProfileOpen.value
 }
 
+
 const closeMenu = (e) => {
   if (!e.target.closest('.profile-container')) {
     isProfileOpen.value = false
   }
 }
 
-onMounted(() => window.addEventListener('click', closeMenu))
+onMounted(() => {
+  window.addEventListener('click', closeMenu)
+  fetchPlans() //
+})
+
 onUnmounted(() => window.removeEventListener('click', closeMenu))
 </script>
 

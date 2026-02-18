@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../components/home.vue' 
-import LoginView from '../components/login.vue' 
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,11 +20,21 @@ const router = createRouter({
       name: 'perfil',
       component: () => import('../components/perfil.vue') 
     },
-    // ROTA DE LOGIN ADICIONADA:
     {
       path: '/login',
       name: 'login',
-      component: () => import('../components/login.vue') // Ou use o import dinâmico como nos de cima
+      component: () => import('../components/login.vue')
+    },
+    {
+      path: '/cadastro',
+      name: 'cadastro',
+      component: () => import('../components/cadastro.vue')
+    },
+  
+    {
+      path: '/planos',
+      name: 'planos',
+      component: () => import('../components/planos.vue') 
     }
   ]
 })
