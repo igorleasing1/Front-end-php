@@ -18,7 +18,7 @@ const router = createRouter({
     {
       path: '/perfil',
       name: 'perfil',
-      component: () => import('../components/perfil.vue') 
+      component: () => import('../components/perfil.vue')
     },
     {
       path: '/login',

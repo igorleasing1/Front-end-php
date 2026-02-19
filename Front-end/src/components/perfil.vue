@@ -1,16 +1,18 @@
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import api from '../api/index.js'
+import {ref, onMounted} from 'vue'
+import api from '../Controller/api.controller';
+import {useRouter} from 'vue-router'
 
 const router = useRouter()
+const user = ref (null)
 
-const user = ref({
-  name: 'Igor Meinhardt',
-  avatar: 'IM',
-  followers: '1.240',
-  following: '850',
-  publicPlaylists: '12'
+onMounted(async () => {
+  try {
+    const response = await api.get('/user')
+    user.value = response.data.data.usuario
+  }catch (error) {
+    router.push('/login')
+  }
 })
 
 const topArtists = [
@@ -43,7 +45,7 @@ const goBack = () => router.push('/')
         <div class="hero-inner">
           <div class="profile-avatar-wrapper">
             <div class="profile-avatar-big">
-              {{ user.avatar }}
+              {{ user?.avatar }}
             </div>
             <div class="edit-badge">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
@@ -52,13 +54,13 @@ const goBack = () => router.push('/')
           
           <div class="profile-info-block">
             <span class="label-caps">PERFIL VERIFICADO</span>
-            <h1 class="display-name">{{ user.name }}</h1>
+            <h1 class="display-name"><strong>{{ user?.name || '-' }}</strong></h1>
             <div class="stats-row">
-              <span class="stat-item"><strong>{{ user.publicPlaylists }}</strong> playlists</span>
+              <span class="stat-item"><strong>{{ user?.publicPlaylists }}</strong> playlists</span>
               <span class="dot"></span>
-              <span class="stat-item"><strong>{{ user.followers }}</strong> seguidores</span>
+              <span class="stat-item"><strong>{{ user?.followers }}</strong> seguidores</span>
               <span class="dot"></span>
-              <span class="stat-item"><strong>{{ user.following }}</strong> seguindo</span>
+              <span class="stat-item"><strong>{{ user?.following }}</strong> seguindo</span>
             </div>
           </div>
         </div>

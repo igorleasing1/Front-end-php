@@ -33,7 +33,7 @@ const handleSubmit = async () => {
 
    
     if (response.data.token) {
-      localStorage.setItem('user_token', response.data.token);
+      localStorage.setItem('user_token', response.data.data.token);
     }
     localStorage.setItem('user_data', JSON.stringify(response.data.user));
 
