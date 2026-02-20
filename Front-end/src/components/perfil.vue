@@ -1,28 +1,103 @@
 <script setup>
-import {ref, onMounted} from 'vue'
-import api from '../Controller/api.controller';
-import {useRouter} from 'vue-router'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '../api/index.js'
 
 const router = useRouter()
-const user = ref (null)
 
-onMounted(async () => {
+const isLoading = ref(false)
+const isProfileOpen = ref(false)
+const progress = ref(0)
+
+const plans = ref([])
+const user = ref(null)
+
+// 🔥 BUSCAR USUÁRIO
+const fetchUser = async () => {
   try {
-    const response = await api.get('/user')
-    user.value = response.data.data.usuario
-  }catch (error) {
+    const { data } = await api.get('/user')
+    user.value = data.data.usuario
+  } catch (error) {
+    console.error('Erro ao buscar usuário:', error)
     router.push('/login')
   }
+}
+
+// 🔥 BUSCAR PLANOS
+const fetchPlans = async () => {
+  try {
+    const { data } = await api.get('/getplanos')
+
+    plans.value = data.map(plan => ({
+      ...plan,
+      name: plan.nome || plan.name || 'Plano',
+      price: plan.preço || plan.valor || plan.price || '0,00',
+      description: plan.descricao || plan.description || '',
+      features: plan.caracteristicas || plan.features || [],
+      buttonText: plan.texto_botao || plan.buttonText || 'Assinar',
+      featured: plan.featured || false,
+      color: '#2563eb'
+    }))
+
+  } catch (error) {
+    console.error("Erro ao carregar planos:", error)
+  }
+}
+
+// 🔥 NAVEGAÇÃO
+const handleNavigation = (plan) => {
+  isLoading.value = true
+  progress.value = 0
+
+  const interval = setInterval(() => {
+    if (progress.value < 90) {
+      progress.value += Math.random() * 12
+    }
+  }, 100)
+
+  setTimeout(() => {
+    clearInterval(interval)
+    progress.value = 100
+
+    router.push({
+      path: '/pagamento',
+      query: {
+        name: plan.name,
+        price: plan.price
+      }
+    })
+  }, 1200)
+}
+
+const toggleProfile = () => {
+  isProfileOpen.value = !isProfileOpen.value
+}
+
+const closeMenu = (e) => {
+  if (!e.target.closest('.profile-container')) {
+    isProfileOpen.value = false
+  }
+}
+
+const logout = async () => {
+  try {
+    await api.post('/logout')
+    router.push('/login')
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+// 🔥 CARREGA TUDO AO MONTAR
+onMounted(() => {
+  window.addEventListener('click', closeMenu)
+  fetchPlans()
+  fetchUser()
 })
 
-const topArtists = [
-  { name: 'Travis Scott', image: 'https://i.scdn.co/image/ab6761610000e5eb19c450e693c86919c3ff6188' },
-  { name: 'Arctic Monkeys', image: 'https://i.scdn.co/image/ab6761610000e5eb7da39dea0a72f581535fb11f' },
-  { name: 'Post Malone', image: 'https://i.scdn.co/image/ab6761610000e5eb6be86484babc5c8397a0c7c0' },
-  { name: 'The Weeknd', image: 'https://i.scdn.co/image/ab6761610000e5ebc839659345c093a12a523a63' }
-]
-
-const goBack = () => router.push('/')
+onUnmounted(() => {
+  window.removeEventListener('click', closeMenu)
+})
 </script>
 
 <template>

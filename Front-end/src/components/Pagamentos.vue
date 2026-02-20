@@ -1,24 +1,24 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import api from '../api/index.js'; 
 
 const router = useRouter();
+const route = useRoute()
 
-// Configurações do Stripe
 const stripe = ref(null);
 const elements = ref(null);
 const cardElement = ref(null);
 const stripeError = ref('');
 
-// Estados da UI
+
 const currentStep = ref(1); 
 const isLoading = ref(false);
 const progress = ref(0);
 const paymentMethod = ref('credit-card');
 
-// Dados que o Vue reclamou que estavam faltando
+
 const cardBrands = [
   { id: 'visa', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg' },
   { id: 'master', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg' },
@@ -26,14 +26,13 @@ const cardBrands = [
 ];
 
 const plan = ref({
-  name: 'Plano Audiophile',
-  price: 29.90,
+  name: route.query.name || 'Plano não selecionado',
+  price: Number(route.query.price) || 0,
   description: 'Qualidade Master Studio (Lossless) + 6 Perfis'
-});
+})
 
-// Inicialização do Stripe
 onMounted(() => {
-  // ATENÇÃO: Use a chave que começa com "pk_test" aqui!
+ 
   if (window.Stripe) {
     stripe.value = window.Stripe('pk_test_51SxyEyCOkGmWUGLjtTG98ajkfWkSfRU8XeBs9akRV7tr1iFDTt6l0SJaUebNFYTfL1d5aklHA2lLMwHYrgSzukDm00Gx96fuTg');
   } else {
@@ -80,14 +79,14 @@ const processPayment = async () => {
   progress.value = 30;
 
   try {
-    // 1. Pega o client_secret do seu Laravel
+   
     const { data } = await api.post('/create-payment-intent', {
       amount: plan.value.price * 100,
     });
 
     progress.value = 70;
 
-    // 2. Confirma o pagamento com o Stripe (Validação Real)
+   
     const result = await stripe.value.confirmCardPayment(data.client_secret, {
       payment_method: { card: cardElement.value }
     });
@@ -105,6 +104,8 @@ const processPayment = async () => {
     isLoading.value = false;
   }
 };
+
+
 </script>
 
 <template>
@@ -126,7 +127,7 @@ const processPayment = async () => {
       <div class="summary">
         <span class="label">Plano Selecionado</span>
         <h3>{{ plan.name }}</h3>
-        <p class="price">R$ 29,90</p>
+        <p class="price">R$ {{ plan.price }}</p>
       </div>
 
       <Transition name="slide" mode="out-in">

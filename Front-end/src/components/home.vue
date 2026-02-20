@@ -8,10 +8,9 @@ const isLoading = ref(false)
 const isProfileOpen = ref(false)
 const progress = ref(0)
 
-
 const plans = ref([])
 
-
+// A função que busca os dados na API
 const fetchPlans = async () => {
   try {
     const { data } = await api.get('/getplanos')
@@ -19,6 +18,12 @@ const fetchPlans = async () => {
     
     plans.value = data.map(plan => ({
       ...plan,
+    
+      name: plan.nome || plan.name || 'Plano',
+      price: plan.preço || plan.valor || plan.price || '0,00',
+      description: plan.descricao || plan.description || '',
+      features: plan.caracteristicas || plan.features || [],
+      buttonText: plan.texto_botao || plan.buttonText || 'Assinar',
       
       featured: plan.id === 'premium' || plan.featured, 
       color: plan.id === 'premium' ? '#0f172a' : (plan.id === 'basic' ? '#2563eb' : '#64748b')
@@ -32,8 +37,7 @@ const goHome = () => router.push('/')
 const goLogin = () => router.push('/login')
 const goSignup = () => router.push('/cadastro')
 
-const handleNavigation = (e) => {
-  e.preventDefault()
+const handleNavigation = (plan) => {
   isLoading.value = true
   progress.value = 0
   
@@ -46,7 +50,15 @@ const handleNavigation = (e) => {
   setTimeout(() => {
     clearInterval(interval)
     progress.value = 100
-    router.push('/pagamento')
+
+    router.push({
+      path: '/pagamento',
+      query: {
+        name: plan.name,
+        price: plan.price
+      }
+    })
+
   }, 1200)
 }
 
@@ -54,16 +66,16 @@ const toggleProfile = () => {
   isProfileOpen.value = !isProfileOpen.value
 }
 
-
 const closeMenu = (e) => {
   if (!e.target.closest('.profile-container')) {
     isProfileOpen.value = false
   }
 }
 
+// Aqui é onde o fetchPlans é chamado assim que a página carrega
 onMounted(() => {
   window.addEventListener('click', closeMenu)
-  fetchPlans() //
+  fetchPlans() 
 })
 
 onUnmounted(() => window.removeEventListener('click', closeMenu))
@@ -83,65 +95,7 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
       </div>
     </Transition>
 
-    <nav class="navbar">
-      <div class="nav-content">
-        <div class="nav-left-group">
-          <button @click="goHome" class="home-btn" title="Home">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-              <polyline points="9 22 9 12 15 12 15 22"></polyline>
-            </svg>
-          </button>
-          <div class="brand">
-            <h1 class="logo">MÚSICA<span>.</span></h1>
-          </div>
-        </div>
-
-        <div class="nav-search">
-          <div class="search-input-wrapper">
-            <svg class="search-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
-            <input type="text" placeholder="O que você quer ouvir?">
-          </div>
-        </div>
-
-        <div class="nav-right">
-          <div class="nav-auth">
-            <button @click="goLogin" class="btn-login">Entrar</button>
-            <button @click="goSignup" class="btn-signup">Inscreva-se</button>
-          </div>
-
-          <a href="#explorar" class="nav-link">Assine o premium</a>
-          
-          <div class="profile-container">
-            <button class="profile-trigger" @click.stop="toggleProfile">
-              <div class="avatar">
-                <img src="https://ui-avatars.com/api/?name=User&background=2563eb&color=fff" alt="Perfil">
-              </div>
-              <svg class="chevron" :class="{ 'active': isProfileOpen }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <path d="M6 9l6 6 6-6"/>
-              </svg>
-            </button>
-
-            <Transition name="slide-up">
-              <div v-if="isProfileOpen" class="profile-dropdown">
-                <div class="dropdown-header">
-                  <p class="user-name">Usuário AudioCore</p>
-                  <p class="user-email">ouvinte@exemplo.com</p>
-                </div>
-                <div class="dropdown-divider"></div>
-                <button class="dropdown-item" @click="router.push('/perfil')">👤 Meu Perfil</button>
-                <button class="dropdown-item" @click="router.push('/configuracoes')">⚙️ Configurações</button>
-                <div class="dropdown-divider"></div>
-                <button class="dropdown-item logout">🚪 Sair</button>
-              </div>
-            </Transition>
-          </div>
-        </div>
-      </div>
-    </nav>
+   
 
     <header class="hero">
       <div class="hero-container">
@@ -186,7 +140,7 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
             </ul>
           </div>
           <div class="card-footer">
-            <a href="/pagamento" @click="handleNavigation"
+           <a href="#" @click.prevent="handleNavigation(plan)"
                 class="btn-plan" 
                 :style="{ backgroundColor: plan.featured ? '#2563eb' : '#1e293b' }">
               {{ plan.buttonText }}
