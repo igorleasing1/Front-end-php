@@ -125,40 +125,46 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
       </div>
     </section>
 
-    <section id="explorar" class="pricing">
-      <div class="pricing-grid">
-        <div 
-          v-for="plan in plans" 
-          :key="plan.id" 
-          :class="['card', { 'featured': plan.featured }]"
-        >
-          <div v-if="plan.featured" class="tag">MAIS POPULAR</div>
-          <div class="card-header">
-            <span class="plan-label">{{ plan.name }}</span>
-            <div class="price-row">
-              <span class="currency">R$</span>
-              <span class="amount">{{ plan.price }}</span>
-              <span class="freq">/mês</span>
-            </div>
-            <p class="plan-desc">{{ plan.description }}</p>
-          </div>
-          <div class="card-body">
-            <ul class="features">
-              <li v-for="feat in plan.features" :key="feat">
-                <span class="icon">✓</span> {{ feat }}
-              </li>
-            </ul>
-          </div>
-          <div class="card-footer">
-           <a href="#" @click.prevent="handleNavigation(plan)"
-                class="btn-plan" 
-                :style="{ backgroundColor: plan.featured ? '#2563eb' : '#1e293b' }">
-              {{ plan.buttonText }}
-            </a>
-          </div>
+<section id="explorar" class="pricing">
+  <div class="pricing-grid">
+    <div 
+      v-for="plan in plans" 
+      :key="plan.id" 
+      :class="['card', { 'featured': plan.featured }]"
+    >
+      <div v-if="plan.featured" class="tag">MAIS POPULAR</div>
+      
+      <div class="card-header">
+        <span class="plan-label">{{ plan.name }}</span>
+        <div class="price-row">
+          <span class="currency">R$</span>
+          <span class="amount">{{ plan.price }}</span>
+          <span class="freq">/mês</span>
         </div>
+        </div>
+
+      <div class="card-body">
+        <ul class="features">
+          <li v-if="plan.description" class="api-feature">
+            <span class="icon">✓</span> {{ plan.description }}
+          </li>
+
+          <li v-for="feat in plan.features" :key="feat">
+            <span class="icon">✓</span> {{ feat }}
+          </li>
+        </ul>
       </div>
-    </section>
+
+      <div class="card-footer">
+        <a href="#" @click.prevent="handleNavigation(plan)"
+            class="btn-plan" 
+            :style="{ backgroundColor: plan.featured ? '#2563eb' : '#1e293b' }">
+          {{ plan.buttonText }}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
 
     <footer class="footer">
       <p>&copy; 2026 AudioCore. Música sem fronteiras.</p>
@@ -702,6 +708,9 @@ body {
 
 .btn-plan:hover {
   opacity: 0.9;
+}
+.api-feature {
+  text-transform: capitalize;
 }
 
 /* FOOTER */

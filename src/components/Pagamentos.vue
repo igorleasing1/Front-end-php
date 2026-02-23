@@ -11,7 +11,7 @@ const elements = ref(null);
 const cardElement = ref(null);
 const stripeError = ref('');
 
-// NOVA REF: Para armazenar a bandeira detectada pelo Stripe
+// Para armazenar a bandeira detectada pelo Stripe
 const detectedBrand = ref('unknown'); 
 
 const currentStep = ref(1); 
@@ -63,16 +63,23 @@ const mountStripe = () => {
   setTimeout(() => {
     cardElement.value.mount("#card-element");
     
-
     cardElement.value.on('change', (event) => {
       stripeError.value = event.error ? event.error.message : '';
       
-   
       if (event.brand) {
         detectedBrand.value = event.brand;
       }
     });
   }, 100);
+};
+
+// Função inteligente para o botão de voltar
+const goBack = () => {
+  if (currentStep.value === 2) {
+    currentStep.value = 1;
+  } else {
+    router.back(); // Volta para a página anterior do site se estiver no passo 1
+  }
 };
 
 const handleAction = () => {
@@ -89,7 +96,6 @@ const processPayment = async () => {
   progress.value = 30;
 
   try {
-    
     const cleanPrice = parseFloat(plan.value.price.replace(',', '.'));
     const { data } = await api.post('/create-payment-intent', {
       amount: Math.round(cleanPrice * 100),
@@ -120,7 +126,13 @@ const processPayment = async () => {
   <div class="checkout-wrapper">
     <div class="checkout-card">
       <header class="header">
-        <button @click="currentStep = 1" v-if="currentStep === 2" class="back-btn">← Voltar</button>
+        <button @click="goBack" class="back-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Voltar
+        </button>
         <h1 class="logo">MÚSICA<span>.</span></h1>
       </header>
 
@@ -137,9 +149,7 @@ const processPayment = async () => {
 
       <Transition name="slide" mode="out-in">
         <div v-if="currentStep === 1" key="step1">
-         
-      
-        </div>
+          </div>
 
         <div v-else key="step2">
           <div class="stripe-field-container">
@@ -189,6 +199,40 @@ const processPayment = async () => {
   margin-bottom: 3rem;
 }
 
+/* --- ESTILOS DO NOVO BOTÃO DE VOLTAR --- */
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.5rem 1rem;
+  border-radius: 99px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateX(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.back-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.back-btn:hover svg {
+  transform: translateX(-2px);
+}
+/* -------------------------------------- */
+
 .header-left {
   display: flex;
   align-items: center;
@@ -218,7 +262,6 @@ const processPayment = async () => {
 }
 .logo span { color: #2563eb; }
 
-/* REUTILIZANDO O CSS DO LOADING */
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -272,7 +315,6 @@ const processPayment = async () => {
   letter-spacing: 1px;
 }
 
-/* --- RESTANTE DO SEU CSS ORIGINAL --- */
 .btn-text {
   color: #64748b;
   text-decoration: none;
@@ -321,7 +363,6 @@ const processPayment = async () => {
 }
 
 .method-tile {
-  
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.01);
   border: 2px solid #1e293b;
@@ -329,7 +370,6 @@ const processPayment = async () => {
   margin-bottom: 1rem;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
 }
 
 .method-tile.active {
@@ -383,9 +423,7 @@ const processPayment = async () => {
   width: 22px; height: 28px;
   display: flex; align-items: center; justify-content: center;
 }
-.card-logo { width: 1%;
-    height: 100%;
-    object-fit: contain;}
+.card-logo { width: 100%; height: 100%; object-fit: contain;}
 
 .btn-primary {
   width: 100%;
@@ -412,7 +450,6 @@ const processPayment = async () => {
   display: flex;
   width: 80%;
   height: 100px;
- 
 }
 
 .security-info {
@@ -433,6 +470,33 @@ const processPayment = async () => {
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.stripe-field-container {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.25rem;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+}
+
+.field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.detected-brand-icon {
+  height: 24px;
+  width: auto;
+  border-radius: 4px;
+}
+
+.error-msg {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
 
 @media (max-width: 480px) {
   .checkout-card { padding: 2rem; border-radius: 0; min-height: 100vh; max-width: 100%; }
