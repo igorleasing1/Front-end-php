@@ -10,24 +10,35 @@ const progress = ref(0)
 
 const plans = ref([])
 
-// A função que busca os dados na API
+// Função que busca os dados exatamente como estão no seu Insomnia
 const fetchPlans = async () => {
   try {
-    const { data } = await api.get('/getplanos')
+    // Ajustado para a rota que aparece no seu print
+    const { data } = await api.get('/plan-prices')
     
-    
-    plans.value = data.map(plan => ({
-      ...plan,
-    
-      name: plan.nome || plan.name || 'Plano',
-      price: plan.preço || plan.valor || plan.price || '0,00',
-      description: plan.descricao || plan.description || '',
-      features: plan.caracteristicas || plan.features || [],
-      buttonText: plan.texto_botao || plan.buttonText || 'Assinar',
-      
-      featured: plan.id === 'premium' || plan.featured, 
-      color: plan.id === 'premium' ? '#0f172a' : (plan.id === 'basic' ? '#2563eb' : '#64748b')
-    }))
+    plans.value = data.map(item => {
+      // Formatando o preço de "49.90" para "49,90"
+      const formattedPrice = item.amount ? 
+        parseFloat(item.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 
+        '0,00'
+
+      return {
+        id: item.id,
+        // Puxando do objeto aninhado 'plan' conforme o Insomnia
+        name: item.plan?.name || 'Plano',
+        tier: item.plan?.tier || 0,
+        description: item.plan?.description || '',
+        price: formattedPrice,
+        
+        // Campos extras para o layout
+        features: ['Qualidade 4K Áudio', 'Sem interrupções', 'Download ilimitado'], 
+        buttonText: 'Assinar Plano',
+        
+        // Lógica de destaque: Se o tier for 1, ele ganha a classe 'featured'
+        featured: item.plan?.tier === 1,
+        color: item.plan?.tier === 1 ? '#0f172a' : '#2563eb'
+      }
+    })
   } catch (error) {
     console.error("Erro ao carregar planos da API:", error)
   }
@@ -72,7 +83,6 @@ const closeMenu = (e) => {
   }
 }
 
-// Aqui é onde o fetchPlans é chamado assim que a página carrega
 onMounted(() => {
   window.addEventListener('click', closeMenu)
   fetchPlans() 

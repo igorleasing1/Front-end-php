@@ -14,7 +14,7 @@ const form = ref({
   password_confirmation: ''
 });
 
-// Regras de validação da senha
+
 const passwordRules = computed(() => {
   const p = form.value.password;
   return {
@@ -25,13 +25,13 @@ const passwordRules = computed(() => {
   };
 });
 
-// Verifica se as senhas são idênticas
+
 const passwordsMatch = computed(() => {
   return form.value.password.length > 0 && 
          form.value.password === form.value.password_confirmation;
 });
 
-// Validação do formulário completo
+
 const isFormValid = computed(() => {
   return (
     form.value.name.length > 0 &&
@@ -51,7 +51,7 @@ const handleSubmit = async () => {
   errorMessage.value = '';
 
   try {
-    // Rota configurada no seu api.php
+
     await api.post('/user/criar', {
       name: form.value.name,
       email: form.value.email,
@@ -61,7 +61,7 @@ const handleSubmit = async () => {
 
     router.push('/login');
   } catch (error) {
-    // Captura mensagens de erro do Laravel (ex: email já cadastrado)
+
     errorMessage.value = error.response?.data?.message || "Erro ao criar conta. Verifique os dados.";
   } finally {
     isLoading.value = false;

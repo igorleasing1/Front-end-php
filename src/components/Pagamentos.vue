@@ -1,49 +1,51 @@
-
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import api from '../api/index.js'; 
 
 const router = useRouter();
-const route = useRoute()
+const route = useRoute();
 
 const stripe = ref(null);
 const elements = ref(null);
 const cardElement = ref(null);
 const stripeError = ref('');
 
+// NOVA REF: Para armazenar a bandeira detectada pelo Stripe
+const detectedBrand = ref('unknown'); 
 
 const currentStep = ref(1); 
 const isLoading = ref(false);
 const progress = ref(0);
-const paymentMethod = ref('credit-card');
 
-
-const cardBrands = [
-  { id: 'visa', logo: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg' },
-  { id: 'master', logo: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg' },
-  { id: 'elo', logo: 'https://upload.wikimedia.org/wikipedia/commons/f/f2/Elo_logo_2022.svg' }
-];
+// Mapeamento de logos das bandeiras
+const cardBrands = {
+  visa: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg',
+  mastercard: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg',
+  elo: 'https://upload.wikimedia.org/wikipedia/commons/f/f2/Elo_logo_2022.svg',
+  amex: 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg',
+  unknown: 'https://cdn-icons-png.flaticon.com/512/179/179457.png' // Ícone genérico de cartão
+};
 
 const plan = ref({
   name: route.query.name || 'Plano não selecionado',
-  price: Number(route.query.price) || 0,
-  description: 'Qualidade Master Studio (Lossless) + 6 Perfis'
-})
+  price: route.query.price || '0,00',
+});
 
 onMounted(() => {
- 
   if (window.Stripe) {
-    stripe.value = window.Stripe('pk_test_51SxyEyCOkGmWUGLjtTG98ajkfWkSfRU8XeBs9akRV7tr1iFDTt6l0SJaUebNFYTfL1d5aklHA2lLMwHYrgSzukDm00Gx96fuTg');
+    initStripe();
   } else {
     const script = document.createElement('script');
     script.src = "https://js.stripe.com/v3/";
-    script.onload = () => {
-      stripe.value = window.Stripe('pk_test_51SxyEyCOkGmWUGLjtTG98ajkfWkSfRU8XeBs9akRV7tr1iFDTt6l0SJaUebNFYTfL1d5aklHA2lLMwHYrgSzukDm00Gx96fuTg');
-    };
+    script.onload = initStripe;
     document.head.appendChild(script);
   }
 });
+
+const initStripe = () => {
+  stripe.value = window.Stripe('pk_test_51SxyEyCOkGmWUGLjtTG98ajkfWkSfRU8XeBs9akRV7tr1iFDTt6l0SJaUebNFYTfL1d5aklHA2lLMwHYrgSzukDm00Gx96fuTg');
+};
 
 const mountStripe = () => {
   elements.value = stripe.value.elements();
@@ -55,12 +57,20 @@ const mountStripe = () => {
       "::placeholder": { color: "#64748b" }
     }
   };
+
   cardElement.value = elements.value.create("card", { style, hidePostalCode: true });
   
   setTimeout(() => {
     cardElement.value.mount("#card-element");
+    
+
     cardElement.value.on('change', (event) => {
       stripeError.value = event.error ? event.error.message : '';
+      
+   
+      if (event.brand) {
+        detectedBrand.value = event.brand;
+      }
     });
   }, 100);
 };
@@ -79,14 +89,14 @@ const processPayment = async () => {
   progress.value = 30;
 
   try {
-   
+    
+    const cleanPrice = parseFloat(plan.value.price.replace(',', '.'));
     const { data } = await api.post('/create-payment-intent', {
-      amount: plan.value.price * 100,
+      amount: Math.round(cleanPrice * 100),
     });
 
     progress.value = 70;
 
-   
     const result = await stripe.value.confirmCardPayment(data.client_secret, {
       payment_method: { card: cardElement.value }
     });
@@ -104,44 +114,40 @@ const processPayment = async () => {
     isLoading.value = false;
   }
 };
-
-
 </script>
 
 <template>
   <div class="checkout-wrapper">
-    <Transition name="fade">
-      <div v-if="isLoading" class="loading-overlay">
-        <div class="progress-bar" :style="{ width: progress + '%' }"></div>
-        <div class="sound-wave"><span></span><span></span><span></span></div>
-        <p>Validando com Stripe...</p>
-      </div>
-    </Transition>
-
     <div class="checkout-card">
       <header class="header">
-        <button @click="currentStep = 1" v-if="currentStep === 2" class="back-btn">←</button>
+        <button @click="currentStep = 1" v-if="currentStep === 2" class="back-btn">← Voltar</button>
         <h1 class="logo">MÚSICA<span>.</span></h1>
       </header>
 
       <div class="summary">
-        <span class="label">Plano Selecionado</span>
-        <h3>{{ plan.name }}</h3>
-        <p class="price">R$ {{ plan.price }}</p>
+        <div>
+          <span class="label">Plano Selecionado</span>
+          <h3>{{ plan.name }}</h3>
+        </div>
+        <div class="price">
+          <span class="currency">R$</span>
+          <span class="val">{{ plan.price }}</span>
+        </div>
       </div>
 
       <Transition name="slide" mode="out-in">
         <div v-if="currentStep === 1" key="step1">
-          <div class="method-tile active">
-            <span>Cartão de Crédito</span>
-            <div class="brands">
-              <img v-for="b in cardBrands" :key="b.id" :src="b.logo" class="mini-logo" />
-            </div>
-          </div>
+         
+      
         </div>
 
         <div v-else key="step2">
-          <div id="stripe-container">
+          <div class="stripe-field-container">
+            <div class="field-header">
+              <span class="subtitle">Dados do Cartão</span>
+              <img :src="cardBrands[detectedBrand] || cardBrands.unknown" class="detected-brand-icon" />
+            </div>
+            
             <div id="card-element"></div>
           </div>
           <p v-if="stripeError" class="error-msg">{{ stripeError }}</p>
