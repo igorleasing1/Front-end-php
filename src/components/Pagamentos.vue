@@ -28,7 +28,7 @@ const getLoggedUser = () => {
 };
 
 const getAuthToken = () => localStorage.getItem('token');
-// ------------------------------------------------
+
 
 const cardBrands = {
   visa: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg',
