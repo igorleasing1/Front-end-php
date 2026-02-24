@@ -21,23 +21,17 @@ const fetchPlans = async () => {
       const formattedPrice = item.amount ? 
         parseFloat(item.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 
         '0,00'
-
-      return {
-        id: item.id,
-    
-        name: item.plan?.name || 'Plano',
-        tier: item.plan?.tier || 0,
-        description: item.plan?.description || '',
-        price: formattedPrice,
-        
-     
-       
-        buttonText: 'Assinar Plano',
-        
-        // Lógica de destaque: Se o tier for 1, ele ganha a classe 'featured'
-        featured: item.plan?.tier === 1,
-        color: item.plan?.tier === 1 ? '#0f172a' : '#2563eb'
-      }
+    return {
+              id: item.id, 
+              plan_id: item.plan?.id,
+              name: item.plan?.name || 'Plano',
+              tier: item.plan?.tier || 0,
+              description: item.plan?.description || '',
+              price: formattedPrice,
+              buttonText: 'Assinar Plano',
+              featured: item.plan?.tier === 1,
+              color: item.plan?.tier === 1 ? '#0f172a' : '#2563eb'
+            }
     })
   } catch (error) {
     console.error("Erro ao carregar planos da API:", error)
@@ -62,13 +56,15 @@ const handleNavigation = (plan) => {
     clearInterval(interval)
     progress.value = 100
 
-    router.push({
-      path: '/pagamento',
-      query: {
-        name: plan.name,
-        price: plan.price
-      }
-    })
+        router.push({
+            path: '/pagamento',
+            query: {
+            name: plan.name,
+            price: plan.price,
+            plan_id: plan.plan_id,
+            plan_price_id: plan.id
+          }
+})
 
   }, 1200)
 }

@@ -16,10 +16,10 @@ const currentStep = ref(1);
 const isLoading = ref(false);
 const progress = ref(0);
 
-// --- CÓDIGO MODIFICADO PARA PEGAR O USER LOGADO ---
+
 const getLoggedUser = () => {
   try {
-    const userData = localStorage.getItem('user'); // ou a chave que você usa
+    const userData = localStorage.getItem('usuario');
     return userData ? JSON.parse(userData) : null;
   } catch (e) {
     console.error("Erro ao ler usuário do localStorage", e);
@@ -27,8 +27,8 @@ const getLoggedUser = () => {
   }
 };
 
-const getAuthToken = () => localStorage.getItem('token');
-// ------------------------------------------------
+const getAuthToken = () => localStorage.getItem('jwt_token'); 
+
 
 const cardBrands = {
   visa: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg',
@@ -37,12 +37,12 @@ const cardBrands = {
   amex: 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg',
   unknown: 'https://cdn-icons-png.flaticon.com/512/179/179457.png'
 };
-
+  
 const plan = ref({
   name: route.query.name || 'Plano não selecionado',
   price: route.query.price || '0,00',
   plan_id: route.query.plan_id,   
-  price_id: route.query.price_id  
+  price_id: route.query.plan_price_id
 });
 
 onMounted(() => {
@@ -100,10 +100,10 @@ const processPayment = async () => {
   const user = getLoggedUser();
   const token = getAuthToken();
 
-  if (!user || !user.id) {
-    stripeError.value = "Você precisa estar logado para finalizar a assinatura.";
-    return;
-  }
+    if (!token) {
+  stripeError.value = "Você precisa estar logado para finalizar a assinatura.";
+  return;
+}
 
   isLoading.value = true;
   stripeError.value = '';
@@ -112,7 +112,7 @@ const processPayment = async () => {
   try {
     const cleanPrice = parseFloat(plan.value.price.toString().replace(',', '.'));
     
-    // Criando o intent enviando o token de auth
+
     const { data: intentData } = await api.post('/create-payment-intent', 
       { amount: Math.round(cleanPrice * 100) },
       { headers: { Authorization: `Bearer ${token}` } }
@@ -136,15 +136,15 @@ const processPayment = async () => {
     } else {
       progress.value = 80;
 
-      // --- PARTE MODIFICADA: USANDO O ID DO USER DINÂMICO ---
-      await api.post('/assinaturas', {
-        user_id: user.id, // Antes era fixo '2'
-        plan_id: plan.value.plan_id,
-        plan_price_id: plan.value.price_id,
-        stripe_id: result.paymentIntent.id
-      }, {
-        headers: { Authorization: `Bearer ${token}` } // Enviando token para segurança
-      });
+  
+       await api.post('/assinaturas', {
+          plan_id: plan.value.plan_id,
+          plan_price_id: plan.value.price_id
+              }, {
+            headers: {
+            Authorization: `Bearer ${token}`
+  }
+});
 
       progress.value = 100;
       alert('Assinatura ativada com sucesso!');
@@ -200,7 +200,7 @@ const processPayment = async () => {
 </template>
 
 <style scoped>
-/* Estilos essenciais para o funcionamento */
+
 .progress-bar-top {
   position: fixed;
   top: 0; left: 0; height: 4px;

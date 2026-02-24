@@ -28,20 +28,19 @@ const handleSubmit = async () => {
       password: form.value.password
     });
 
-    // 1. Extraímos o token (ajustado para os formatos mais comuns de API)
+  
     const token = response.data.token || response.data.data?.token;
     const userData = response.data.user || response.data.data?.user;
 
     if (token) {
-      // 2. SALVAMOS COM OS NOMES QUE A NAVBAR USA:
+     
       localStorage.setItem('jwt_token', token);
       
       if (userData) {
         localStorage.setItem('usuario', JSON.stringify(userData));
       }
 
-      // 3. Redirecionamos para a Home. 
-      // O 'watch' na Navbar vai detectar a mudança de rota e atualizar os botões!
+     
       router.push('/');
     } else {
       errorMessage.value = "Erro: Token não recebido do servidor.";

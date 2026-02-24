@@ -12,22 +12,22 @@ const progress = ref(0)
 const plans = ref([])
 const user = ref(null)
 
-// Função para buscar dados do usuário baseada no seu print do Insomnia
+
 const fetchUser = async () => {
   try {
     const { data } = await api.get('/user')
     
-    // A API retorna um objeto com 'data' sendo um array
+
     if (data.success && data.data && data.data.length > 0) {
-      const userData = data.data[0] // Pegamos o primeiro usuário da lista
+      const userData = data.data[0] 
       
       user.value = {
         name: userData.name,
         email: userData.email,
-        // Usamos a string base64 da imagem se existir, senão a inicial do nome
+        
         avatar: userData.profile_photo_base64 || userData.name.charAt(0).toUpperCase(),
         isImage: !!userData.profile_photo_base64,
-        // Fallbacks para estatísticas (ajuste conforme seu backend evoluir)
+        
         publicPlaylists: userData.playlists_count || 0,
         followers: userData.followers_count || 0,
         following: userData.following_count || 0
