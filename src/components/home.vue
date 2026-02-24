@@ -10,28 +10,28 @@ const progress = ref(0)
 
 const plans = ref([])
 
-// Função que busca os dados exatamente como estão no seu Insomnia
+
 const fetchPlans = async () => {
   try {
-    // Ajustado para a rota que aparece no seu print
+    
     const { data } = await api.get('/plan-prices')
     
     plans.value = data.map(item => {
-      // Formatando o preço de "49.90" para "49,90"
+    
       const formattedPrice = item.amount ? 
         parseFloat(item.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 
         '0,00'
 
       return {
         id: item.id,
-        // Puxando do objeto aninhado 'plan' conforme o Insomnia
+    
         name: item.plan?.name || 'Plano',
         tier: item.plan?.tier || 0,
         description: item.plan?.description || '',
         price: formattedPrice,
         
-        // Campos extras para o layout
-        features: ['Qualidade 4K Áudio', 'Sem interrupções', 'Download ilimitado'], 
+     
+       
         buttonText: 'Assinar Plano',
         
         // Lógica de destaque: Se o tier for 1, ele ganha a classe 'featured'

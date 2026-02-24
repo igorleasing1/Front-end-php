@@ -69,16 +69,15 @@ onMounted(fetchMusicas);
 
 <style scoped>
 
-/* ===== FUNDO (Extraído da Imagem) ===== */
 .spotify-layout {
   min-height: 100vh;
-  /* O fundo da sua imagem é um tom de azul marinho quase preto (#050a18) */
+
   background: #050a18; 
   color: #fff;
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ===== TOP BAR ===== */
+
 .top-bar {
   padding: 20px 40px;
 }

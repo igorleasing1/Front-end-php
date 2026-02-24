@@ -10,26 +10,39 @@ const stripe = ref(null);
 const elements = ref(null);
 const cardElement = ref(null);
 const stripeError = ref('');
-
-// Para armazenar a bandeira detectada pelo Stripe
 const detectedBrand = ref('unknown'); 
 
 const currentStep = ref(1); 
 const isLoading = ref(false);
 const progress = ref(0);
 
-// Mapeamento de logos das bandeiras
+// --- CÓDIGO MODIFICADO PARA PEGAR O USER LOGADO ---
+const getLoggedUser = () => {
+  try {
+    const userData = localStorage.getItem('user'); // ou a chave que você usa
+    return userData ? JSON.parse(userData) : null;
+  } catch (e) {
+    console.error("Erro ao ler usuário do localStorage", e);
+    return null;
+  }
+};
+
+const getAuthToken = () => localStorage.getItem('token');
+// ------------------------------------------------
+
 const cardBrands = {
   visa: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Visa_2021.svg',
   mastercard: 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg',
   elo: 'https://upload.wikimedia.org/wikipedia/commons/f/f2/Elo_logo_2022.svg',
   amex: 'https://upload.wikimedia.org/wikipedia/commons/3/30/American_Express_logo.svg',
-  unknown: 'https://cdn-icons-png.flaticon.com/512/179/179457.png' // Ícone genérico de cartão
+  unknown: 'https://cdn-icons-png.flaticon.com/512/179/179457.png'
 };
 
 const plan = ref({
   name: route.query.name || 'Plano não selecionado',
   price: route.query.price || '0,00',
+  plan_id: route.query.plan_id,   
+  price_id: route.query.price_id  
 });
 
 onMounted(() => {
@@ -44,7 +57,12 @@ onMounted(() => {
 });
 
 const initStripe = () => {
-  stripe.value = window.Stripe('pk_test_51SxyEyCOkGmWUGLjtTG98ajkfWkSfRU8XeBs9akRV7tr1iFDTt6l0SJaUebNFYTfL1d5aklHA2lLMwHYrgSzukDm00Gx96fuTg');
+  const publicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+  if (!publicKey) {
+    console.error("Erro: VITE_STRIPE_PUBLIC_KEY não definida no .env");
+    return;
+  }
+  stripe.value = window.Stripe(publicKey);
 };
 
 const mountStripe = () => {
@@ -62,24 +80,11 @@ const mountStripe = () => {
   
   setTimeout(() => {
     cardElement.value.mount("#card-element");
-    
     cardElement.value.on('change', (event) => {
       stripeError.value = event.error ? event.error.message : '';
-      
-      if (event.brand) {
-        detectedBrand.value = event.brand;
-      }
+      if (event.brand) detectedBrand.value = event.brand;
     });
   }, 100);
-};
-
-// Função inteligente para o botão de voltar
-const goBack = () => {
-  if (currentStep.value === 2) {
-    currentStep.value = 1;
-  } else {
-    router.back(); // Volta para a página anterior do site se estiver no passo 1
-  }
 };
 
 const handleAction = () => {
@@ -92,45 +97,73 @@ const handleAction = () => {
 };
 
 const processPayment = async () => {
+  const user = getLoggedUser();
+  const token = getAuthToken();
+
+  if (!user || !user.id) {
+    stripeError.value = "Você precisa estar logado para finalizar a assinatura.";
+    return;
+  }
+
   isLoading.value = true;
-  progress.value = 30;
+  stripeError.value = '';
+  progress.value = 10;
 
   try {
-    const cleanPrice = parseFloat(plan.value.price.replace(',', '.'));
-    const { data } = await api.post('/create-payment-intent', {
-      amount: Math.round(cleanPrice * 100),
-    });
+    const cleanPrice = parseFloat(plan.value.price.toString().replace(',', '.'));
+    
+    // Criando o intent enviando o token de auth
+    const { data: intentData } = await api.post('/create-payment-intent', 
+      { amount: Math.round(cleanPrice * 100) },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-    progress.value = 70;
+    progress.value = 50;
 
-    const result = await stripe.value.confirmCardPayment(data.client_secret, {
-      payment_method: { card: cardElement.value }
+    if (!intentData.clientSecret) {
+        throw new Error("O servidor não retornou o clientSecret.");
+    }
+
+    const result = await stripe.value.confirmCardPayment(intentData.clientSecret, {
+      payment_method: { 
+        card: cardElement.value 
+      }
     });
 
     if (result.error) {
       stripeError.value = result.error.message;
       isLoading.value = false;
     } else {
+      progress.value = 80;
+
+      // --- PARTE MODIFICADA: USANDO O ID DO USER DINÂMICO ---
+      await api.post('/assinaturas', {
+        user_id: user.id, // Antes era fixo '2'
+        plan_id: plan.value.plan_id,
+        plan_price_id: plan.value.price_id,
+        stripe_id: result.paymentIntent.id
+      }, {
+        headers: { Authorization: `Bearer ${token}` } // Enviando token para segurança
+      });
+
       progress.value = 100;
-      alert('Assinatura realizada com sucesso!');
+      alert('Assinatura ativada com sucesso!');
       router.push('/');
     }
   } catch (e) {
-    stripeError.value = "Erro ao conectar com o servidor.";
+    console.error("Erro detalhado:", e);
+    stripeError.value = e.response?.data?.message || "Erro ao processar pagamento.";
     isLoading.value = false;
   }
 };
 </script>
-
 <template>
   <div class="checkout-wrapper">
+    <div v-if="isLoading" class="progress-bar-top" :style="{ width: progress + '%' }"></div>
+
     <div class="checkout-card">
       <header class="header">
-        <button @click="goBack" class="back-btn">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12"></line>
-            <polyline points="12 19 5 12 12 5"></polyline>
-          </svg>
+        <button @click="currentStep === 2 ? currentStep = 1 : router.back()" class="back-btn">
           Voltar
         </button>
         <h1 class="logo">MÚSICA<span>.</span></h1>
@@ -147,31 +180,52 @@ const processPayment = async () => {
         </div>
       </div>
 
-      <Transition name="slide" mode="out-in">
-        <div v-if="currentStep === 1" key="step1">
-          </div>
-
-        <div v-else key="step2">
-          <div class="stripe-field-container">
-            <div class="field-header">
-              <span class="subtitle">Dados do Cartão</span>
-              <img :src="cardBrands[detectedBrand] || cardBrands.unknown" class="detected-brand-icon" />
-            </div>
-            
-            <div id="card-element"></div>
-          </div>
-          <p v-if="stripeError" class="error-msg">{{ stripeError }}</p>
+      <div v-if="currentStep === 2" class="stripe-field-container">
+        <div class="field-header">
+          <span class="subtitle">Dados do Cartão</span>
+          <img :src="cardBrands[detectedBrand] || cardBrands.unknown" class="detected-brand-icon" />
         </div>
-      </Transition>
+        <div id="card-element"></div>
+        <p v-if="stripeError" class="error-msg">{{ stripeError }}</p>
+      </div>
 
       <button @click="handleAction" class="btn-primary" :disabled="isLoading">
-        {{ currentStep === 1 ? 'Continuar para Pagamento' : 'Finalizar Assinatura' }}
+        <span v-if="!isLoading">
+          {{ currentStep === 1 ? 'Continuar para Pagamento' : 'Finalizar Assinatura' }}
+        </span>
+        <span v-else>Processando...</span>
       </button>
     </div>
   </div>
 </template>
 
 <style scoped>
+/* Estilos essenciais para o funcionamento */
+.progress-bar-top {
+  position: fixed;
+  top: 0; left: 0; height: 4px;
+  background: #2563eb;
+  transition: width 0.3s ease;
+  z-index: 9999;
+}
+
+.stripe-field-container {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  margin-top: 1rem;
+}
+
+#card-element { width: 100%; }
+
+.error-msg {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 0.8rem;
+}
+
+.detected-brand-icon { height: 20px; }
 .checkout-wrapper {
   display: flex;
   justify-content: center;

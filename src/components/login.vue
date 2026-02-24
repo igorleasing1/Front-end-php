@@ -12,7 +12,6 @@ const form = ref({
   password: ''
 });
 
-
 const isFormValid = computed(() => {
   return form.value.email.includes('@') && form.value.password.length >= 6;
 });
@@ -24,24 +23,31 @@ const handleSubmit = async () => {
   errorMessage.value = '';
 
   try {
-   
     const response = await api.post('/login', {
       email: form.value.email,
       password: form.value.password
     });
 
+    // 1. Extraímos o token (ajustado para os formatos mais comuns de API)
+    const token = response.data.token || response.data.data?.token;
+    const userData = response.data.user || response.data.data?.user;
 
-   
-    if (response.data.token) {
-      localStorage.setItem('user_token', response.data.data.token);
+    if (token) {
+      // 2. SALVAMOS COM OS NOMES QUE A NAVBAR USA:
+      localStorage.setItem('jwt_token', token);
+      
+      if (userData) {
+        localStorage.setItem('usuario', JSON.stringify(userData));
+      }
+
+      // 3. Redirecionamos para a Home. 
+      // O 'watch' na Navbar vai detectar a mudança de rota e atualizar os botões!
+      router.push('/');
+    } else {
+      errorMessage.value = "Erro: Token não recebido do servidor.";
     }
-    localStorage.setItem('user_data', JSON.stringify(response.data.user));
-
-  
-    router.push('/');
     
   } catch (error) {
- 
     if (error.response && error.response.status === 401) {
       errorMessage.value = "E-mail ou senha incorretos.";
     } else {
@@ -108,10 +114,9 @@ const goSignup = () => {
 </template>
 
 <style scoped>
-/* Mantendo seus estilos originais e adicionando ajustes de feedback */
-
+/* Seu CSS original mantido abaixo */
 .error-msg {
-  color: #f87171 !important; /* Vermelho suave */
+  color: #f87171 !important; 
   font-weight: 500;
   font-size: 0.85rem !important;
 }
@@ -192,14 +197,8 @@ input {
   transition: border-color 0.3s;
 }
 
-input:focus {
-  border-color: #00d4ff;
-}
-
-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+input:focus { border-color: #00d4ff; }
+input:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-main {
   width: 100%;

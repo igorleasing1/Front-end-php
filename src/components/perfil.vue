@@ -12,18 +12,35 @@ const progress = ref(0)
 const plans = ref([])
 const user = ref(null)
 
-// 🔥 BUSCAR USUÁRIO
+// Função para buscar dados do usuário baseada no seu print do Insomnia
 const fetchUser = async () => {
   try {
     const { data } = await api.get('/user')
-    user.value = data.data.usuario
+    
+    // A API retorna um objeto com 'data' sendo um array
+    if (data.success && data.data && data.data.length > 0) {
+      const userData = data.data[0] // Pegamos o primeiro usuário da lista
+      
+      user.value = {
+        name: userData.name,
+        email: userData.email,
+        // Usamos a string base64 da imagem se existir, senão a inicial do nome
+        avatar: userData.profile_photo_base64 || userData.name.charAt(0).toUpperCase(),
+        isImage: !!userData.profile_photo_base64,
+        // Fallbacks para estatísticas (ajuste conforme seu backend evoluir)
+        publicPlaylists: userData.playlists_count || 0,
+        followers: userData.followers_count || 0,
+        following: userData.following_count || 0
+      }
+    }
   } catch (error) {
     console.error('Erro ao buscar usuário:', error)
-    router.push('/login')
+    if (error.response?.status === 401) {
+      router.push('/login')
+    }
   }
 }
 
-// 🔥 BUSCAR PLANOS
 const fetchPlans = async () => {
   try {
     const { data } = await api.get('/getplanos')
@@ -44,7 +61,6 @@ const fetchPlans = async () => {
   }
 }
 
-// 🔥 NAVEGAÇÃO
 const handleNavigation = (plan) => {
   isLoading.value = true
   progress.value = 0
@@ -82,13 +98,15 @@ const closeMenu = (e) => {
 const logout = async () => {
   try {
     await api.post('/logout')
+    localStorage.removeItem('jwt_token')
     router.push('/login')
   } catch (error) {
     console.error(error)
   }
 }
 
-// 🔥 CARREGA TUDO AO MONTAR
+const goBack = () => router.push('/')
+
 onMounted(() => {
   window.addEventListener('click', closeMenu)
   fetchPlans()
@@ -119,8 +137,9 @@ onUnmounted(() => {
         <div class="hero-overlay"></div>
         <div class="hero-inner">
           <div class="profile-avatar-wrapper">
-            <div class="profile-avatar-big">
-              {{ user?.avatar }}
+            <div class="profile-avatar-big" style="overflow: hidden;">
+              <img v-if="user?.isImage" :src="user.avatar" style="width: 100%; height: 100%; object-fit: cover;" />
+              <span v-else>{{ user?.avatar || '?' }}</span>
             </div>
             <div class="edit-badge">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
@@ -129,7 +148,7 @@ onUnmounted(() => {
           
           <div class="profile-info-block">
             <span class="label-caps">PERFIL VERIFICADO</span>
-            <h1 class="display-name"><strong>{{ user?.name || '-' }}</strong></h1>
+            <h1 class="display-name"><strong>{{ user?.name || '...' }}</strong></h1>
             <div class="stats-row">
               <span class="stat-item"><strong>{{ user?.publicPlaylists }}</strong> playlists</span>
               <span class="dot"></span>
@@ -149,17 +168,7 @@ onUnmounted(() => {
           </div>
           
           <div class="artists-grid">
-            <div v-for="artist in topArtists" :key="artist.name" class="artist-item">
-              <div class="artist-thumb">
-                <img :src="artist.image" :alt="artist.name">
-                <div class="play-hover">
-                  <div class="play-btn-circle">▶</div>
-                </div>
-              </div>
-              <h3>{{ artist.name }}</h3>
-              <p>Artista</p>
             </div>
-          </div>
         </section>
 
         <section class="shelf">

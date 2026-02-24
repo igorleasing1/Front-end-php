@@ -6,10 +6,10 @@ const route = useRoute()
 const isMenuOpen = ref(false)
 const isLoggedIn = ref(false)
 
-// Função para checar se o token existe no LocalStorage
+
 const checkAuth = () => {
   const token = localStorage.getItem('jwt_token')
-  isLoggedIn.value = !!token // Transforma a existência do token em true/false
+  isLoggedIn.value = !!token 
 }
 
 const toggleMenu = () => {
