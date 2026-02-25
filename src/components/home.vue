@@ -7,7 +7,7 @@ const router = useRouter()
 const isLoading = ref(false)
 const isProfileOpen = ref(false)
 const progress = ref(0)
-
+const checkingSubscription = ref(true)
 const plans = ref([])
 
 
@@ -35,6 +35,33 @@ const fetchPlans = async () => {
     })
   } catch (error) {
     console.error("Erro ao carregar planos da API:", error)
+  }
+}
+
+const checkSubscription = async () => {
+  const token = localStorage.getItem('jwt_token')
+
+  if (!token) {
+    checkingSubscription.value = false
+    return
+  }
+
+  try {
+    const { data } = await api.get('/minha-assinatura', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+
+    if (data.subscribed) {
+      router.push('/planos') 
+      return
+    }
+
+  } catch (error) {
+    console.error('Erro ao verificar assinatura', error)
+  } finally {
+    checkingSubscription.value = false
   }
 }
 
@@ -79,16 +106,21 @@ const closeMenu = (e) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('click', closeMenu)
-  fetchPlans() 
+
+  await checkSubscription()
+
+  if (!checkingSubscription.value) {
+    fetchPlans()
+  }
 })
 
 onUnmounted(() => window.removeEventListener('click', closeMenu))
 </script>
 
 <template>
-  <div class="site-wrapper">
+  <div v-if="!checkingSubscription" class="site-wrapper">
     <Transition name="fade">
       <div v-if="isLoading" class="loading-overlay">
         <div class="progress-bar-top" :style="{ width: progress + '%' }"></div>

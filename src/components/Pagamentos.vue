@@ -102,6 +102,7 @@ const processPayment = async () => {
 
     if (!token) {
   stripeError.value = "Você precisa estar logado para finalizar a assinatura.";
+  router.push('/cadastro')
   return;
 }
 
