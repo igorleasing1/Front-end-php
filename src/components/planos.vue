@@ -6,23 +6,75 @@ const musicas = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
 
+
 const fetchMusicas = async () => {
   try {
     loading.value = true;
-    const response = await api.get('/musicas/top');
-    const dadosBrutos = Array.isArray(response.data) ? response.data : [];
-    
-    musicas.value = dadosBrutos.map(item => ({
-      id: item.mbid || Math.random(),
-      titulo: item.name || 'Sem título',
-      artista: item.artist?.name || 'Artista desconhecido',
-      capa: item.image?.[3]?.['#text'] || 'https://via.placeholder.com/300'
-    }));
+
+  
+    const [resTop, resFavoritos] = await Promise.all([
+      api.get('/musicas/top'),
+      api.get('/favorite/listar').catch(err => {
+        console.error("Erro na rota de listar favoritos:", err);
+        return { data: [] };
+      })
+    ]);
+
+    const dadosBrutos = Array.isArray(resTop.data) ? resTop.data : [];
+    const meusFavoritos = Array.isArray(resFavoritos.data) ? resFavoritos.data : [];
+
+  
+    console.log("Músicas da API (Top):", dadosBrutos);
+    console.log("Favoritos do seu Banco:", meusFavoritos);
+
+    musicas.value = dadosBrutos.map(item => {
+  
+      const musicaId = String(item.mbid || `${item.name}-${item.artist?.name}`).replace(/\s/g, '');
+      
+  
+      const jaEFavorito = meusFavoritos.some(fav => {
+        const idNoBanco = String(fav.music_id || '').trim();
+        const idGeradoAgora = String(musicaId).trim();
+        return idNoBanco === idGeradoAgora;
+      });
+
+      return {
+        id: musicaId,
+        titulo: item.name || 'Sem título',
+        artista: item.artist?.name || 'Artista desconhecido',
+        capa: item.image?.[3]?.['#text'] || 'https://via.placeholder.com/300',
+        isFavorited: jaEFavorito
+      };
+    });
+
   } catch (error) {
-    console.error('Erro:', error);
-    musicas.value = [];
+    console.error('Erro geral:', error);
   } finally {
     loading.value = false;
+  }
+};
+
+const toggleFavorite = async (musica) => {
+  
+  const originalStatus = musica.isFavorited;
+  
+  try {
+    if (!originalStatus) {
+      musica.isFavorited = true; 
+      await api.post('/favorite/criar', {
+  music_id: String(musica.id).trim(), 
+  music_name: musica.titulo,
+  artist_name: musica.artista
+});
+    } else {
+      musica.isFavorited = false;
+      await api.delete(`/favorite/descurtir/${musica.id}`);
+    }
+  } catch (error) {
+  
+    musica.isFavorited = originalStatus;
+    console.error(error.response?.data || error);
+    alert('Sessão expirada ou erro no servidor. Tente fazer login novamente.');
   }
 };
 
@@ -47,16 +99,34 @@ onMounted(fetchMusicas);
     </header>
 
     <main class="content">
-      <h2 class="section-title">Suas músicas favoritas</h2>
+      <h2 class="section-title">Top músicas</h2>
       
-      <div v-if="loading" class="loading">Carregando...</div>
+      <div v-if="loading" class="loading">Carregando sua biblioteca...</div>
+
+      <div v-else-if="filteredMusicas.length === 0" class="loading">
+        Nenhuma música encontrada.
+      </div>
 
       <div v-else class="grid-musicas">
-        <div v-for="musica in filteredMusicas" :key="musica.id" class="card-spotify">
+        <div 
+          v-for="musica in filteredMusicas" 
+          :key="musica.id" 
+          class="card-spotify"
+        >
           <div class="capa-wrapper">
-            <img :src="musica.capa" :alt="musica.titulo" />
+            <img :src="musica.capa" :alt="musica.titulo" loading="lazy" />
+            
             <button class="btn-play">▶</button>
+
+            <button 
+              class="btn-like"
+              :class="{ 'is-active': musica.isFavorited }"
+              @click.stop="toggleFavorite(musica)"
+            >
+              {{ musica.isFavorited ? '💙' : '🤍' }}
+            </button>
           </div>
+
           <div class="info">
             <h3 class="titulo">{{ musica.titulo }}</h3>
             <p class="artista">{{ musica.artista }}</p>
@@ -68,30 +138,45 @@ onMounted(fetchMusicas);
 </template>
 
 <style scoped>
+/* Adicionei apenas uma transição suave para o feedback do clique */
+.btn-like {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+.btn-like:active {
+  transform: scale(0.8);
+} 
 .spotify-layout {
   min-height: 100vh;
-
-  background: #050a18; 
+  background: #050a18;
   color: #fff;
   font-family: Arial, Helvetica, sans-serif;
 }
-
 
 .top-bar {
   padding: 20px 40px;
 }
 
 .search-container {
-  /* Cor do input de busca conforme o print */
-  background-color: #0f172a; 
+  background-color: #0f172a;
   width: 300px;
   display: flex;
   align-items: center;
   padding: 8px 14px;
   border-radius: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.1); /* Bordas sutis como na imagem */
-  transition: 0.3s;
 }
 
 .search-container input {
@@ -101,14 +186,8 @@ onMounted(fetchMusicas);
   color: #fff;
   margin-left: 10px;
   width: 100%;
-  font-size: 14px;
 }
 
-.search-container input::placeholder {
-  color: #94a3b8; /* Cor cinza azulada do placeholder */
-}
-
-/* ===== CONTEÚDO ===== */
 .content {
   padding: 0 40px 40px 40px;
   max-width: 1100px;
@@ -121,29 +200,24 @@ onMounted(fetchMusicas);
   margin-bottom: 20px;
 }
 
-/* ===== GRID ===== */
 .grid-musicas {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
 }
 
-/* ===== CARD (Cor idêntica ao container do print) ===== */
 .card-spotify {
-  background-color: #0c1222; /* Azul escuro dos containers da imagem */
+  background-color: #0c1222;
   padding: 16px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
   transition: 0.3s;
   cursor: pointer;
 }
 
 .card-spotify:hover {
   background-color: #111a30;
-  border-color: rgba(255, 255, 255, 0.1);
 }
 
-/* ===== CAPA ===== */
 .capa-wrapper {
   position: relative;
   width: 100%;
@@ -158,26 +232,20 @@ onMounted(fetchMusicas);
   border-radius: 8px;
 }
 
-/* ===== BOTÃO PLAY (Azul Royal da Imagem) ===== */
 .btn-play {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  /* Usei o azul do botão "Conhecer Planos" da sua imagem */
-  background-color: #2563eb; 
+  background-color: #2563eb;
   border: none;
   width: 44px;
   height: 44px;
   border-radius: 50%;
   font-size: 18px;
-  color: #fff; /* Texto branco para o play no azul */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: #fff;
   opacity: 0;
   transform: translateY(10px);
   transition: 0.3s;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
 }
 
 .card-spotify:hover .btn-play {
@@ -185,22 +253,37 @@ onMounted(fetchMusicas);
   transform: translateY(0);
 }
 
-/* ===== TEXTO ===== */
+
+.btn-like {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-size: 16px;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-like:hover {
+  transform: scale(1.1);
+}
+
 .titulo {
   font-size: 15px;
   font-weight: 600;
-  margin-bottom: 4px;
-  color: #fff;
 }
 
 .artista {
   font-size: 13px;
-  color: #94a3b8; /* Cor secundária suavizada */
+  color: #94a3b8;
 }
 
 .loading {
   color: #94a3b8;
-  font-size: 14px;
 }
-
 </style>
