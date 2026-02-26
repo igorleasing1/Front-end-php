@@ -22,39 +22,38 @@ const handleSubmit = async () => {
   isLoading.value = true;
   errorMessage.value = '';
 
-  try {
+ try {
     const response = await api.post('/login', {
       email: form.value.email,
       password: form.value.password
     });
 
-  
+    
+    console.log('Resposta Completa da API:', response.data);
+
+   
     const token = response.data.token || response.data.data?.token;
-    const userData = response.data.user || response.data.data?.user;
+    const userData = response.data.data || response.data.user;
 
     if (token) {
-     
       localStorage.setItem('jwt_token', token);
       
       if (userData) {
+        
+        const id = userData.id || userData.id_user;
+        localStorage.setItem('user_id', id);
         localStorage.setItem('usuario', JSON.stringify(userData));
+        
+        console.log('Login Sucesso! ID salvo:', id);
+        router.push('/');
       }
-
-     
-      router.push('/');
     } else {
-      errorMessage.value = "Erro: Token não recebido do servidor.";
+      errorMessage.value = "Erro: Token não encontrado na resposta.";
     }
     
   } catch (error) {
-    if (error.response && error.response.status === 401) {
-      errorMessage.value = "E-mail ou senha incorretos.";
-    } else {
-      errorMessage.value = error.response?.data?.message || "Erro ao conectar com o servidor.";
-    }
-    console.error('Erro no login:', error);
-  } finally {
-    isLoading.value = false;
+    console.error('Erro detalhado no login:', error);
+    errorMessage.value = error.response?.data?.message || "Erro ao conectar.";
   }
 };
 
