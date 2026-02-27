@@ -158,7 +158,7 @@ onUnmounted(() => window.removeEventListener('click', closeMenu))
     <div 
       v-for="plan in plans" 
       :key="plan.id" 
-      :class="['card', { 'featured': plan.featured }]"
+      :class="['card']"
     >
       <div v-if="plan.featured" class="tag">MAIS POPULAR</div>
       
@@ -227,7 +227,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* LOADING STYLES */
+
 .loading-overlay {
   position: fixed;
   inset: 0;
@@ -281,7 +281,7 @@ body {
   letter-spacing: 1px;
 }
 
-/* NAVBAR */
+
 .navbar {
   position: fixed;
   top: 0;
@@ -526,7 +526,7 @@ body {
   color: #ef4444;
 }
 
-/* HERO */
+
 .hero {
   padding: 160px 1.5rem 80px;
   text-align: center;
@@ -579,7 +579,7 @@ body {
   box-shadow: 0 15px 30px -10px rgba(37, 99, 235, 0.5);
 }
 
-/* WELCOME */
+
 .welcome {
   padding: 40px 1.5rem;
 }
@@ -608,7 +608,7 @@ body {
   margin: 0 auto;
 }
 
-/* PRICING */
+
 .pricing {
   max-width: 1200px;
   margin: 0 auto;
