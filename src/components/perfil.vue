@@ -219,34 +219,46 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.profile-page { background-color:
-   #080a10;
-   min-height: 
-   100vh; color:
-    #fff; 
-    font-family: 'Inter', sans-serif;
+.profile-page { 
+  background-color:#080a10;
+   min-height: 100vh; 
+   color: #fff; 
+  font-family: 'Inter', sans-serif;
    }
-.navbar { height: 70px;
-   display: flex;
-    align-items: center;
-     background: rgba(8, 10, 16, 0.9); 
-     backdrop-filter: blur(10px); position: sticky;
-      top: 0; z-index: 10; 
-      border-bottom: 1px solid rgba(255,255,255,0.05); }
-.nav-content { width: 100%; 
-  max-width: 1200px; 
-  margin: 0 auto;
+.navbar { 
+  height: 70px;
   display: flex;
-   justify-content: space-between;
+  align-items: center;
+  background: rgba(8, 10, 16, 0.9); 
+  backdrop-filter: blur(10px); position: sticky;
+  top: 0; z-index: 10; 
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+     }
+
+  .nav-content { 
+    width: 100%; 
+    max-width: 1200px; 
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-     padding: 0 2rem; 
+    padding: 0 2rem; 
     }
+    
 .nav-actions { 
   display: flex;
    gap: 15px;
    }
 
-.profile-hero {  width: 70%; position: relative; padding: 4rem 2rem; margin-top: 2rem; border-radius: 30px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); overflow: hidden; }
+.profile-hero {  
+  width: 70%; 
+  position: relative;
+  padding: 4rem 2rem;
+  margin-top: 2rem;
+   border-radius: 30px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+     overflow: hidden; 
+    }
 .hero-overlay { position: absolute; inset: 0; background: radial-gradient(circle at 20% 50%, rgba(37, 99, 235, 0.15) 0%, transparent 50%); }
 .hero-inner { position: relative; display: flex; align-items: center; gap: 3rem; z-index: 1; }
 
