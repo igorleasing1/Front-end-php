@@ -31,7 +31,7 @@ onMounted(checkAuth)
 watch(() => route.path, checkAuth)
 </script>
 
-<template>
+<template><div class="main-content">
   <nav class="navbar">
     <div class="nav-content">
       
@@ -88,9 +88,15 @@ watch(() => route.path, checkAuth)
 </div>
 </div>
 </nav>
+</div>
+ 
 </template>
 
 <style scoped>
+
+.main-content {
+  padding-top: 90px; /* 64px do header + espaço */
+}
 
 .navbar {
   position: fixed;

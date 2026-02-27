@@ -9,9 +9,18 @@ const fileInput = ref(null)
 
 const isEditing = ref(false)
 const editName = ref('')
-const editEmail = ref('') 
+const editEmail = ref('')
+const photoChanged = ref(false)
+
+const showPasswordModal = ref(false)
+const currentPassword = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const loadingPassword = ref(false)
 
 
+const likedSongs = ref([])
+const loadingSongs = ref(true)
 const user = ref({
   name: '',
   email: '',
@@ -19,8 +28,24 @@ const user = ref({
   isImage: false,
   publicPlaylists: 0,
   followers: 0,
-  following: 0
+  following: 0,
+  hasSubscription: false 
 })
+
+
+const normalizar = (valor) => {
+  return String(valor || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9]/gi, '');
+};
+
+const gerarIdSeguro = (item) => {
+  const nome = item.music_name || item.name;
+  const artista = item.artist_name || item.artist?.name;
+  return normalizar(`${nome}-${artista}`);
+};
 
 
 const fetchUser = async () => {
@@ -31,9 +56,14 @@ const fetchUser = async () => {
       return;
     }
 
-    const { data } = await api.get(`/user/${userId}`);
-    const userData = data.data;
+   
+    const [resUser, resSub] = await Promise.all([
+      api.get(`/user/${userId}`),
+      api.get('/minha-assinatura') 
+    ]);
 
+    const userData = resUser.data.data;
+    
     if (userData) {
       user.value = {
         name: userData.name,
@@ -42,7 +72,8 @@ const fetchUser = async () => {
         isImage: !!userData.profile_photo_base64,
         publicPlaylists: userData.playlists_count || 0,
         followers: userData.followers_count || 0,
-        following: userData.following_count || 0
+        following: userData.following_count || 0,
+        hasSubscription: resSub.data.subscribed 
       };
       editName.value = userData.name;
       editEmail.value = userData.email;
@@ -53,246 +84,269 @@ const fetchUser = async () => {
 };
 
 
+const fetchLikedSongs = async () => {
+  try {
+    loadingSongs.value = true;
+    const response = await api.get('/favoritos');
+    const dadosBrutos = response.data.data || response.data || [];
+
+    likedSongs.value = dadosBrutos.map(item => {
+      return {
+        id: item.music_id || gerarIdSeguro(item),
+        titulo: item.music_name || item.name || 'Sem título',
+        artista: item.artist_name || item.artist?.name || 'Artista desconhecido',
+      
+        capa: item.cover || item.image?.[3]?.['#text'] || 'https://via.placeholder.com/300/0f172a/FFFFFF?text=Vile+Music',
+      };
+    });
+  } catch (error) {
+    console.error('Erro ao buscar músicas curtidas:', error);
+  } finally {
+    loadingSongs.value = false;
+  }
+};
+
+
 const handleSaveProfile = async () => {
   try {
     const userId = localStorage.getItem('user_id');
     
-   
+  
     const response = await api.put(`user/atualizar/${userId}`, {
       name: editName.value,
       email: editEmail.value
     });
 
     if (response.data.success) {
-     
-      await updateProfilePhoto();
+      
+      if (photoChanged.value && user.value.avatar) {
+        await api.put('user/foto', { 
+          profile_photo_base64: user.value.avatar 
+        });
+        photoChanged.value = false; 
+      }
 
-     
-      user.value.name = editName.value;
-      user.value.email = editEmail.value;
       isEditing.value = false;
-      
-  
-      localStorage.setItem('usuario', JSON.stringify(response.data.data));
-      await fetchUser(); 
-      
+      await fetchUser();
       alert("Perfil atualizado com sucesso!");
     }
   } catch (error) {
-    console.error("Erro geral:", error);
-    alert("Erro ao salvar dados básicos.");
+    alert(error.response?.data?.message || "Erro ao salvar dados.");
   }
 };
 
-const updateProfilePhoto = async () => {
+const updatePassword = async () => {
   try {
-    const token = localStorage.getItem('token'); 
-    
-    if (!user.value.avatar || !user.value.isImage) return;
+    loadingPassword.value = true;
+    await api.put('user/atualizarSenha', {
+      current_password: currentPassword.value,
+      password: newPassword.value,
+      password_confirmation: confirmPassword.value
+    });
 
-   
-    const response = await api.put('user/foto', 
-      { profile_photo_base64: user.value.avatar },
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
-      }
-    );
-
-    if (response.data.success) {
-      console.log("Foto salva com sucesso!");
-      return true;
-    }
+    alert("Senha atualizada com sucesso!");
+    showPasswordModal.value = false;
+    currentPassword.value = ''; newPassword.value = ''; confirmPassword.value = '';
   } catch (error) {
-    console.error("Erro 403 ou similar na foto:", error.response);
-    return false;
+    alert(error.response?.data?.message || 'Erro ao atualizar senha');
+  } finally {
+    loadingPassword.value = false;
   }
 };
+
+const cancelSubscription = async () => {
+  if (!confirm("Deseja realmente cancelar sua assinatura Premium?")) return;
+  try {
+    await api.post('/assinatura/cancel'); 
+    alert("Assinatura cancelada.");
+    await fetchUser(); 
+  } catch (error) {
+    alert("Erro ao cancelar assinatura.");
+  }
+};
+
 const onFileSelected = (event) => {
   const file = event.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.readAsDataURL(file);
   reader.onload = () => {
-    
-    user.value.avatar = reader.result; 
+    user.value.avatar = reader.result;
     user.value.isImage = true;
+    photoChanged.value = true; 
   };
 };
 
-const logout = async () => {
-  try {
-    await api.post('/logout')
-    localStorage.clear()
-    router.push('/login')
-  } catch (error) {
-    console.error(error)
-  }
-};
-
-const goBack = () => router.push('/')
-
 onMounted(() => {
   fetchUser();
-})
+  fetchLikedSongs();
+});
 </script>
 
 <template>
-  <div class="profile-page">
-    <nav class="navbar">
-      <div class="nav-content">
-        <h1 class="logo" @click="goBack">MÚSICA<span>.</span></h1>
-        <div class="nav-actions">
-          <button class="btn-back-pill" @click="goBack">Início</button>
-          <button class="btn-logout" @click="logout">Sair</button>
+<div class="vile-profile-page">
+
+  <header class="profile-header">
+    <div class="header-content">
+      <div class="profile-avatar-container" @click="fileInput.click()">
+        <input type="file" ref="fileInput" @change="onFileSelected" hidden accept="image/*" />
+        <img v-if="user.isImage" :src="user.avatar" class="avatar-img" />
+        <div v-else class="avatar-placeholder">
+          <span>{{ user.name ? user.name.charAt(0).toUpperCase() : '?' }}</span>
+        </div>
+        <div class="avatar-overlay"><span>✏️ Alterar</span></div>
+      </div>
+
+      <div class="profile-info">
+        <span class="profile-label">Perfil</span>
+        <h1 v-if="!isEditing" class="profile-name">{{ user.name }}</h1>
+        <div v-else class="edit-inputs">
+          <input v-model="editName" class="vile-input" placeholder="Nome" />
+          <input v-model="editEmail" class="vile-input" placeholder="Email" />
+        </div>
+        <div class="profile-stats">
+          <span>{{ user.publicPlaylists }} playlists</span> •
+          <span>{{ user.followers }} seguidores</span> •
+          <span>{{ user.following }} seguindo</span>
         </div>
       </div>
-    </nav>
+    </div>
+  </header>
 
-    <main class="main-wrapper">
-      <header class="profile-hero">
-        <div class="hero-overlay"></div>
-        <div class="hero-inner">
-          
-          <div class="profile-avatar-wrapper">
-            <input type="file" ref="fileInput" @change="onFileSelected" hidden accept="image/*" />
-            
-            <div class="profile-avatar-big">
-              <img v-if="user.isImage" :src="user.avatar" class="img-fill" />
-              <span v-else>{{ user.name ? user.name.charAt(0).toUpperCase() : '?' }}</span>
-            </div>
-            
-            <div class="edit-badge" @click="fileInput.click()" title="Mudar foto">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-              </svg>
-            </div>
-          </div>
-          
-          <div class="profile-info-block">
-           
-            
-            <div v-if="!isEditing" class="view-mode">
-              <h1 class="display-name"><strong>{{ user.name }}</strong></h1>
-              <p class="user-email-display">{{ user.email }}</p>
-              <button class="btn-outline-edit" @click="isEditing = true">Editar Perfil</button>
-            </div>
-
-            <div v-else class="edit-mode">
-              <div class="edit-fields-group">
-                <input v-model="editName" class="input-edit" placeholder="Seu nome" />
-                <input v-model="editEmail" class="input-edit" placeholder="Seu e-mail" />
-              </div>
-              <div class="edit-buttons">
-                <button class="btn-save" @click="handleSaveProfile">Salvar Alterações</button>
-                <button class="btn-cancel" @click="isEditing = false">Cancelar</button>
-              </div>
-            </div>
-
-            <div class="stats-row">
-              <span class="stat-item"><strong>{{ user.publicPlaylists }}</strong> playlists</span>
-              <span class="dot"></span>
-              <span class="stat-item"><strong>{{ user.followers }}</strong> seguidores</span>
-              <span class="dot"></span>
-              <span class="stat-item"><strong>{{ user.following }}</strong> seguindo</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div class="content-body">
-        <section class="shelf">
-          <div class="shelf-header">
-            <h2>Suas Playlists</h2>
-          </div>
-          <div class="empty-state-card">
-            <div class="icon-circle">🎧</div>
-            <p>Sua biblioteca musical aparece aqui.</p>
-          </div>
-        </section>
-      </div>
-    </main>
+  <div class="profile-actions-bar">
+    <div class="actions-left" v-if="!isEditing">
+      <button class="pill-btn primary" @click="isEditing = true">Editar Perfil</button>
+      <button class="pill-btn outline" @click="showPasswordModal = true">Alterar Senha</button>
+      
+      <button v-if="user.hasSubscription" class="pill-btn danger" @click="cancelSubscription">
+        Cancelar Assinatura
+      </button>
+    </div>
+    <div class="actions-left" v-else>
+      <button class="pill-btn primary" @click="handleSaveProfile">Salvar Alterações</button>
+      <button class="pill-btn text" @click="isEditing = false">Cancelar</button>
+    </div>
   </div>
+
+  <main class="main-content">
+    <h2 class="section-title">Músicas Curtidas</h2>
+    
+    <div v-if="loadingSongs" class="loading">Carregando favoritos...</div>
+    <div v-else-if="likedSongs.length === 0" class="empty-state">Nenhuma música curtida ainda.</div>
+    
+    <div v-else class="songs-grid">
+      <div v-for="song in likedSongs" :key="song.id" class="song-card">
+        <div class="song-img-container">
+          <img :src="song.capa" class="song-cover" />
+          <button class="btn-play-mini">▶</button>
+        </div>
+        <div class="song-details">
+          <h4 class="song-title">{{ song.titulo }}</h4>
+          <p class="song-artist">{{ song.artista }}</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div v-if="showPasswordModal" class="modal-overlay">
+    <div class="modal-password">
+      <h3>Alterar Senha</h3>
+      <div class="modal-body">
+        <label>Senha Atual</label>
+        <input v-model="currentPassword" type="password" class="vile-input" />
+        <label>Nova Senha</label>
+        <input v-model="newPassword" type="password" class="vile-input" />
+        <label>Confirmar Nova Senha</label>
+        <input v-model="confirmPassword" type="password" class="vile-input" />
+      </div>
+      <div class="modal-buttons">
+        <button class="pill-btn primary" @click="updatePassword" :disabled="loadingPassword">
+          {{ loadingPassword ? 'Processando...' : 'Atualizar Senha' }}
+        </button>
+        <button class="pill-btn text" @click="showPasswordModal = false">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+</div>
 </template>
 
 <style scoped>
-.profile-page { 
-  background-color:#080a10;
-   min-height: 100vh; 
-   color: #fff; 
-  font-family: 'Inter', sans-serif;
-   }
-.navbar { 
-  height: 70px;
-  display: flex;
-  align-items: center;
-  background: rgba(8, 10, 16, 0.9); 
-  backdrop-filter: blur(10px); position: sticky;
-  top: 0; z-index: 10; 
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-     }
-
-  .nav-content { 
-    width: 100%; 
-    max-width: 1200px; 
-    margin: 0 auto;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 2rem; 
-    }
-    
-.nav-actions { 
-  display: flex;
-   gap: 15px;
-   }
-
-.profile-hero {  
-  width: 70%; 
-  position: relative;
-  padding: 4rem 2rem;
-  margin-top: 2rem;
-   border-radius: 30px;
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-     overflow: hidden; 
-    }
-.hero-overlay { position: absolute; inset: 0; background: radial-gradient(circle at 20% 50%, rgba(37, 99, 235, 0.15) 0%, transparent 50%); }
-.hero-inner { position: relative; display: flex; align-items: center; gap: 3rem; z-index: 1; }
-
-.profile-avatar-wrapper { position: relative; }
-.profile-avatar-big { width: 180px; height: 180px; background: linear-gradient(135deg, #2563eb, #7c3aed); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 4rem; font-weight: 800; border: 4px solid rgba(255,255,255,0.1); overflow: hidden; }
-.img-fill { width: 100%; height: 100%; object-fit: cover; }
-.edit-badge { position: absolute; bottom: 5px; right: 5px; background: #fff; color: #000; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-.edit-badge:hover { transform: scale(1.1); background: #3b82f6; color: #fff; }
-
-.display-name { font-size: clamp(2rem, 5vw, 4.5rem); letter-spacing: -3px; margin: 0.5rem 0 0; line-height: 1; }
-.user-email-display { color: #94a3b8; margin-bottom: 1.5rem; font-size: 1.1rem; }
-
-.edit-fields-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1.5rem; max-width: 400px; }
-.input-edit { background: rgba(255,255,255,0.05); border: 2px solid rgba(37, 99, 235, 0.5); border-radius: 12px; color: #fff; font-size: 1.2rem; padding: 12px 20px; width: 100%; outline: none; transition: 0.3s; }
-.input-edit:focus { border-color: #2563eb; background: rgba(255,255,255,0.08); }
-
-.btn-save { background: #2563eb; color: #fff; border: none; padding: 10px 25px; border-radius: 100px; font-weight: 700; cursor: pointer; transition: 0.3s; }
-.btn-save:hover { background: #1d4ed8; transform: translateY(-2px); }
-.btn-cancel { background: transparent; color: #94a3b8; border: none; padding: 10px 20px; cursor: pointer; font-weight: 600; }
-.btn-outline-edit { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 20px; border-radius: 100px; cursor: pointer; font-size: 14px; transition: 0.3s; }
-.btn-outline-edit:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
-
-.btn-logout { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px 20px; border-radius: 100px; cursor: pointer; font-weight: 600; transition: 0.3s; }
-.btn-logout:hover { background: #ef4444; color: #fff; }
-
-.stats-row { display: flex; gap: 15px; margin-top: 1.5rem; color: #94a3b8; font-size: 14px; }
-.dot { width: 4px; height: 4px; background: #334155; border-radius: 50%; align-self: center; }
-
-.shelf { margin-top: 3rem; }
-.empty-state-card { background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1); border-radius: 20px; padding: 4rem; text-align: center; color: #64748b; }
-
-@media (max-width: 768px) {
-  .hero-inner { flex-direction: column; text-align: center; }
-  .profile-avatar-big { width: 140px; height: 140px; }
-  .edit-fields-group { margin: 0 auto 1.5rem; }
+.vile-profile-page {
+  background-color: #080a10;
+  min-height: 100vh;
+  color: white;
 }
+
+.profile-header {
+  background: linear-gradient(180deg, #1e3a8a 0%, #080a10 100%);
+  padding: 100px 48px 30px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.header-content { display: flex; align-items: flex-end; gap: 24px; }
+
+.profile-avatar-container {
+  width: 190px; height: 190px; border-radius: 50%;
+  overflow: hidden; background: #111; position: relative; cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-overlay { 
+  position: absolute; inset: 0; background: rgba(0,0,0,0.5); 
+  display: flex; align-items: center; justify-content: center; 
+  opacity: 0; transition: 0.3s; 
+}
+.profile-avatar-container:hover .avatar-overlay { opacity: 1; }
+
+.profile-name { font-size: 4rem; font-weight: 900; margin: 8px 0; letter-spacing: -2px; }
+
+.pill-btn {
+  padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; border: none;
+}
+
+.pill-btn.primary { background-color: #2563eb; color: white; }
+.pill-btn.primary:hover { background-color: #3b82f6; transform: scale(1.03); }
+
+.pill-btn.outline { background: transparent; border: 1px solid #333; color: white; }
+.pill-btn.outline:hover { border-color: #2563eb; }
+
+.pill-btn.danger { background: transparent; border: 1px solid #ef4444; color: #ef4444; }
+.pill-btn.danger:hover { background: #ef4444; color: white; }
+
+.profile-actions-bar { padding: 20px 48px; }
+.actions-left { display: flex; gap: 12px; }
+
+.main-content { padding: 20px 48px; }
+.songs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 24px; }
+
+.song-card {
+  background: #0c1222; padding: 16px; border-radius: 12px; transition: 0.3s; cursor: pointer;
+}
+.song-card:hover { background: #111a30; }
+
+.song-img-container { position: relative; margin-bottom: 12px; }
+.song-cover { width: 100%; aspect-ratio: 1; border-radius: 8px; object-fit: cover; }
+
+.btn-play-mini {
+  position: absolute; bottom: 8px; right: 8px; background: #2563eb;
+  border: none; width: 38px; height: 38px; border-radius: 50%; color: white;
+  opacity: 0; transform: translateY(5px); transition: 0.3s;
+}
+.song-card:hover .btn-play-mini { opacity: 1; transform: translateY(0); }
+
+.song-title { font-size: 1rem; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song-artist { color: #94a3b8; font-size: 0.85rem; }
+
+.vile-input {
+  background: #111; border: 1px solid #333; color: white;
+  padding: 12px; border-radius: 8px; margin-bottom: 10px; width: 100%; box-sizing: border-box;
+}
+
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal-password { background: #0f172a; padding: 32px; border-radius: 16px; width: 400px; border: 1px solid #1e293b; }
+.modal-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
 </style>

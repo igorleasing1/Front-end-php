@@ -1,12 +1,12 @@
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, getCurrentInstance } from 'vue';
 import api from '../api/index.js';
- 
+
+const { proxy } = getCurrentInstance();
 
 const musicas = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
-
 
 const normalizar = (valor) => {
   return String(valor || '')
@@ -33,7 +33,6 @@ const fetchMusicas = async () => {
       ? resTop.data
       : [];
 
-    
     const meusFavoritos =
       Array.isArray(resFavoritos.data?.data)
         ? resFavoritos.data.data
@@ -46,9 +45,7 @@ const fetchMusicas = async () => {
     );
 
     musicas.value = dadosBrutos.map(item => {
-
       const musicaId = gerarIdSeguro(item);
-
       const jaEFavorito = favoritosIds.includes(musicaId);
 
       return {
@@ -63,11 +60,12 @@ const fetchMusicas = async () => {
   } catch (error) {
 
     if (error.response?.status === 401) {
-      alert('Sessão expirada. Faça login novamente.');
+      proxy.$toast('Sessão expirada. Faça login novamente.', 'error');
       localStorage.removeItem('token');
       window.location.href = '/login';
     } else {
       console.error('Erro ao carregar músicas:', error.response?.data || error);
+      proxy.$toast('Erro ao carregar músicas.', 'error');
     }
 
   } finally {
@@ -75,14 +73,21 @@ const fetchMusicas = async () => {
   }
 };
 
-
 const toggleFavorite = async (musica) => {
   const originalStatus = musica.isFavorited;
 
   try {
+
+   
+    const totalFavoritas = musicas.value.filter(m => m.isFavorited).length;
+
+    if (!originalStatus && totalFavoritas >= 5) {
+      proxy.$toast('Seu plano Tier 1 permite apenas 5 músicas favoritas.', 'error');
+      return;
+    }
+
     if (!originalStatus) {
 
-      
       musica.isFavorited = true;
 
       await api.post('/favorite/criar', {
@@ -91,11 +96,15 @@ const toggleFavorite = async (musica) => {
         artist_name: musica.artista
       });
 
+      proxy.$toast('Música adicionada aos favoritos 🎵', 'success');
+
     } else {
 
       musica.isFavorited = false;
 
       await api.delete(`/favorite/descurtir/${musica.id}`);
+
+      proxy.$toast('Música removida dos favoritos ❌', 'success');
     }
 
   } catch (error) {
@@ -103,16 +112,17 @@ const toggleFavorite = async (musica) => {
     musica.isFavorited = originalStatus;
 
     if (error.response?.status === 401) {
-      alert('Sessão expirada. Faça login novamente.');
+      proxy.$toast('Sessão expirada. Faça login novamente.', 'error');
       localStorage.removeItem('token');
       window.location.href = '/login';
+    } else if (error.response?.status === 403) {
+      proxy.$toast('Você atingiu o limite do seu plano.', 'error');
     } else {
       console.error('Erro ao favoritar:', error.response?.data || error);
-      alert('Erro no servidor. Tente novamente.');
+      proxy.$toast('Erro no servidor. Tente novamente.', 'error');
     }
   }
 };
-
 const filteredMusicas = computed(() => {
   const busca = (searchQuery.value || '').toLowerCase();
 
@@ -127,12 +137,7 @@ onMounted(fetchMusicas);
 
   <template>
     <div class="spotify-layout">
-      <header class="top-bar">
-        <div class="search-container">
-          <span class="icon">🔍</span>
-          <input v-model="searchQuery" placeholder="O que você quer ouvir?" />
-        </div>
-      </header>
+      
 
       <main class="content">
         <h2 class="section-title">Top músicas</h2>
