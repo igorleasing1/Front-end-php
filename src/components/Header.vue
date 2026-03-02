@@ -21,6 +21,8 @@ const logout = () => {
   localStorage.removeItem('usuario')
   isLoggedIn.value = false
   isMenuOpen.value = false
+    
+  router.push('/login')
 
 }
 
@@ -61,8 +63,7 @@ watch(() => route.path, checkAuth)
   
   <template v-if="isLoggedIn">
     <router-link to="/planos" class="nav-link">Top Tracks</router-link>
-    <router-link to="/artistas" class="nav-link">Artistas</router-link>
-    <router-link to="/favoritos" class="nav-link">Favoritos</router-link>
+     <router-link to="/Playlists" class="nav-link">Suas playlists</router-link>
   </template>
 
   <div v-else class="auth-group">
@@ -82,7 +83,7 @@ watch(() => route.path, checkAuth)
     
     <div v-if="isMenuOpen" class="simple-dropdown">
       <router-link to="/perfil">Meu Perfil</router-link>
-      <button @click="logout" class="logout-btn">Sair</button>
+      <button  @click="logout" class="logout-btn">Sair</button>
     </div>
   </div>
 </div>
@@ -95,7 +96,7 @@ watch(() => route.path, checkAuth)
 <style scoped>
 
 .main-content {
-  padding-top: 90px; /* 64px do header + espaço */
+  padding-top: 90px;
 }
 
 .navbar {

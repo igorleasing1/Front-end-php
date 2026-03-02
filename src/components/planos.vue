@@ -7,6 +7,9 @@ const { proxy } = getCurrentInstance();
 const musicas = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
+const playlists = ref([]);
+const showPlaylistModal = ref(false);
+const musicaSelecionada = ref(null);
 
 const normalizar = (valor) => {
   return String(valor || '')
@@ -52,22 +55,13 @@ const fetchMusicas = async () => {
         id: musicaId,
         titulo: item.name || 'Sem título',
         artista: item.artist?.name || 'Artista desconhecido',
-        capa: item.image?.[3]?.['#text'] || 'https://via.placeholder.com/300',
+        capa: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTMJpwsDYz99DT098MzvjrU1tFAXFJvaow5YQ&s',
         isFavorited: jaEFavorito
       };
     });
 
   } catch (error) {
-
-    if (error.response?.status === 401) {
-      proxy.$toast('Sessão expirada. Faça login novamente.', 'error');
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    } else {
-      console.error('Erro ao carregar músicas:', error.response?.data || error);
-      proxy.$toast('Erro ao carregar músicas.', 'error');
-    }
-
+    proxy.$toast('Erro ao carregar músicas.', 'error');
   } finally {
     loading.value = false;
   }
@@ -78,7 +72,6 @@ const toggleFavorite = async (musica) => {
 
   try {
 
-   
     const totalFavoritas = musicas.value.filter(m => m.isFavorited).length;
 
     if (!originalStatus && totalFavoritas >= 5) {
@@ -108,21 +101,46 @@ const toggleFavorite = async (musica) => {
     }
 
   } catch (error) {
-
     musica.isFavorited = originalStatus;
-
-    if (error.response?.status === 401) {
-      proxy.$toast('Sessão expirada. Faça login novamente.', 'error');
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-    } else if (error.response?.status === 403) {
-      proxy.$toast('Você atingiu o limite do seu plano.', 'error');
-    } else {
-      console.error('Erro ao favoritar:', error.response?.data || error);
-      proxy.$toast('Erro no servidor. Tente novamente.', 'error');
-    }
+    proxy.$toast('Erro no servidor.', 'error');
   }
 };
+
+
+const abrirModalPlaylist = async (musica) => {
+  try {
+    musicaSelecionada.value = musica;
+    showPlaylistModal.value = true;
+
+    const res = await api.get('/playlist');
+    playlists.value = Array.isArray(res.data?.data)
+      ? res.data.data
+      : Array.isArray(res.data)
+        ? res.data
+        : [];
+
+  } catch (error) {
+    proxy.$toast('Erro ao carregar playlists', 'error');
+  }
+};
+
+const adicionarNaPlaylist = async (playlistId) => {
+  try {
+
+    await api.post(`/playlist/${playlistId}/musicas`, {
+      music_id: musicaSelecionada.value.id,
+      music_name: musicaSelecionada.value.titulo,
+      artist_name: musicaSelecionada.value.artista
+    });
+
+    proxy.$toast('Música adicionada à playlist 🎶', 'success');
+    showPlaylistModal.value = false;
+
+  } catch (error) {
+    proxy.$toast('Erro ao adicionar na playlist', 'error');
+  }
+};
+
 const filteredMusicas = computed(() => {
   const busca = (searchQuery.value || '').toLowerCase();
 
@@ -135,196 +153,208 @@ const filteredMusicas = computed(() => {
 onMounted(fetchMusicas);
 </script>
 
-  <template>
-    <div class="spotify-layout">
-      
+<template>
+  <div class="spotify-layout">
 
-      <main class="content">
-        <h2 class="section-title">Top músicas</h2>
-        
-        <div v-if="loading" class="loading">Carregando sua biblioteca...</div>
+    <main class="content">
+      <h2 class="section-title">Top músicas</h2>
 
-        <div v-else-if="filteredMusicas.length === 0" class="loading">
-          Nenhuma música encontrada.
-        </div>
+      <div v-if="loading" class="loading">Carregando...</div>
 
-        <div v-else class="grid-musicas">
-          <div 
-            v-for="musica in filteredMusicas" 
-            :key="musica.id" 
-            class="card-spotify"
-          >
-            <div class="capa-wrapper">
-              <img :src="musica.capa" :alt="musica.titulo" loading="lazy" />
-              
-              <button class="btn-play">▶</button>
+      <div v-else class="grid-musicas">
+        <div 
+          v-for="musica in filteredMusicas" 
+          :key="musica.id" 
+          class="card-spotify"
+        >
+          <div class="capa-wrapper">
+            <img :src="musica.capa" />
 
-              <button 
-                class="btn-like"
-                :class="{ 'is-active': musica.isFavorited }"
-                @click.stop="toggleFavorite(musica)"
-              >
-                {{ musica.isFavorited ? '💙' : '🤍' }}
-              </button>
-            </div>
+            <button class="btn-play">▶</button>
 
-            <div class="info">
-              <h3 class="titulo">{{ musica.titulo }}</h3>
-              <p class="artista">{{ musica.artista }}</p>
-            </div>
+            <button 
+              class="btn-like"
+              :class="{ 'is-active': musica.isFavorited }"
+              @click.stop="toggleFavorite(musica)"
+            >
+              {{ musica.isFavorited ? '💙' : '🤍' }}
+            </button>
+
+            <button 
+              class="btn-add"
+              @click.stop="abrirModalPlaylist(musica)"
+            >
+              ➕
+            </button>
+          </div>
+
+          <div class="info">
+            <h3 class="titulo">{{ musica.titulo }}</h3>
+            <p class="artista">{{ musica.artista }}</p>
           </div>
         </div>
-      </main>
+      </div>
+    </main>
+
+    
+    <div v-if="showPlaylistModal" class="modal-overlay">
+      <div class="modal">
+        <h3>Adicionar à Playlist</h3>
+
+        <div v-if="playlists.length === 0">
+          Você ainda não tem playlists.
+        </div>
+
+        <div v-else class="playlist-list">
+          <button
+            v-for="playlist in playlists"
+            :key="playlist.id"
+            class="playlist-item"
+            @click="adicionarNaPlaylist(playlist.id)"
+          >
+            {{ playlist.name }}
+          </button>
+        </div>
+
+        <button class="btn-close" @click="showPlaylistModal = false">
+          Fechar
+        </button>
+      </div>
     </div>
-  </template>
 
-  <style scoped>
-  /* Adicionei apenas uma transição suave para o feedback do clique */
-  .btn-like {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0,0,0,0.6);
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  </div>
+</template>
 
-  .btn-like:active {
-    transform: scale(0.8);
-  } 
-  .spotify-layout {
-    min-height: 100vh;
-    background: #050a18;
-    color: #fff;
-    font-family: Arial, Helvetica, sans-serif;
-  }
+<style scoped>
+.spotify-layout {
+  min-height: 100vh;
+  background: #050a18;
+  color: #fff;
+}
 
-  .top-bar {
-    padding: 20px 40px;
-  }
+.content {
+  padding: 40px;
+}
 
-  .search-container {
-    background-color: #0f172a;
-    width: 300px;
-    display: flex;
-    align-items: center;
-    padding: 8px 14px;
-    border-radius: 30px;
-  }
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
 
-  .search-container input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: #fff;
-    margin-left: 10px;
-    width: 100%;
-  }
+.grid-musicas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
 
-  .content {
-    padding: 0 40px 40px 40px;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
+.card-spotify {
+  background-color: #0c1222;
+  padding: 16px;
+  border-radius: 12px;
+  transition: 0.3s;
+}
 
-  .section-title {
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 20px;
-  }
+.card-spotify:hover {
+  background-color: #111a30;
+}
 
-  .grid-musicas {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-  }
+.capa-wrapper {
+  position: relative;
+  aspect-ratio: 1;
+  margin-bottom: 12px;
+}
 
-  .card-spotify {
-    background-color: #0c1222;
-    padding: 16px;
-    border-radius: 12px;
-    transition: 0.3s;
-    cursor: pointer;
-  }
+.capa-wrapper img {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  object-fit: cover;
+}
 
-  .card-spotify:hover {
-    background-color: #111a30;
-  }
+.btn-play {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: #2563eb;
+  border: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: white;
+  opacity: 0;
+  transition: 0.3s;
+}
 
-  .capa-wrapper {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 1/1;
-    margin-bottom: 12px;
-  }
+.card-spotify:hover .btn-play {
+  opacity: 1;
+}
 
-  .capa-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 8px;
-  }
+.btn-like {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+}
 
-  .btn-play {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    background-color: #2563eb;
-    border: none;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    font-size: 18px;
-    color: #fff;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: 0.3s;
-  }
+.btn-add {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+}
 
-  .card-spotify:hover .btn-play {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
+.modal {
+  background: #0c1222;
+  padding: 20px;
+  border-radius: 12px;
+  width: 300px;
+}
 
-  .btn-like {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0,0,0,0.6);
-    border: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    font-size: 16px;
-    color: white;
-    cursor: pointer;
-    transition: 0.2s;
-  }
+.playlist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 15px 0;
+}
 
-  .btn-like:hover {
-    transform: scale(1.1);
-  }
+.playlist-item {
+  background: #111a30;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
 
-  .titulo {
-    font-size: 15px;
-    font-weight: 600;
-  }
+.playlist-item:hover {
+  background: #2563eb;
+}
 
-  .artista {
-    font-size: 13px;
-    color: #94a3b8;
-  }
-
-  .loading {
-    color: #94a3b8;
-  }
-  </style>
+.btn-close {
+  background: #1e293b;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: white;
+}
+</style>

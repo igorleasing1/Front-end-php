@@ -35,7 +35,10 @@ const router = createRouter({
       path: '/planos',
       name: 'planos',
       component: () => import('../components/planos.vue') 
-    }
+    },
+
+     { path: '/playlists', name: 'playlists', 
+      component: () => import('../components/Playlists.vue') } 
   ]
 })
 
